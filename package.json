@@ -1,0 +1,33 @@
+{
+    "name": "@tak-ps/tak-infra",
+    "type": "module",
+    "private": true,
+    "version": "1.0.0",
+    "description": "CloudFormation managed infrastructure for TAK Server",
+    "scripts": {
+        "lint": "eslint cloudformation/*.js cloudformation/lib/*.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "engines": {
+        "node": ">= 18"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/dfpc-coe/tak-infra.git"
+    },
+    "author": "Nick Ingalls <nick@ingalls.ca>",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/dfpc-coe/tak-infra/issues"
+    },
+    "homepage": "https://github.com/dfpc-coe/tak-infra#readme",
+    "dependencies": {
+        "@openaddresses/cloudfriend": "^7.0.0"
+    },
+    "devDependencies": {
+        "@openaddresses/batch-alarms": "^4.1.0",
+        "@openaddresses/deploy": "^8.0.0",
+        "eslint": "^9.1.1",
+        "eslint-plugin-n": "^17.4.0"
+    }
+}
