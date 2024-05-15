@@ -12,6 +12,10 @@
 
 ### Pending Release
 
+### v1.0.1
+
+- :rocket: Removed unused cloud deps
+
 ### v1.0.0
 
 - :rocket: Initial Release

@@ -3,15 +3,14 @@ import SG from './lib/sg.js';
 import RDS from './lib/db.js';
 import Alarms from './lib/alarms.js';
 import KMS from './lib/kms.js';
-import SMS from './lib/sms.js';
 import {
     RDS as RDSAlarms
 } from '@openaddresses/batch-alarms';
 
 export default cf.merge(
-    SG, RDS, SMS, KMS, Alarms,
+    SG, RDS, KMS, Alarms,
     {
-        Description: 'Template for @tak-ps/frontend-infra',
+        Description: 'Template for @tak-ps/tak-infra',
         Parameters: {
             GitSha: {
                 Description: 'GitSha that is currently being deployed',
