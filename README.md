@@ -4,6 +4,20 @@
 
 ## AWS Deployment
 
+### Pre-Reqs
+
+The TAK service assumes several pre-requisite dependencies are deployed before
+initial TAK Server deployment.
+The following are dependencies which need to be created:
+
+| Name                  | Notes |
+| --------------------- | ----- |
+| `coe-vpc-<name>`      | VPC & networking to place tasks in - [repo](ttps://github.com/dfpc-coe/vpc) |
+| `coe-ecs-<name>`      | ECS Cluster for API Service - [repo](ttps://github.com/dfpc-coe/ecs) |
+| `coe-ecr-tak`         | ECR Repository for storing Server Images - [repo](ttps://github.com/dfpc-coe/ecr)     |
+
+### Installation
+
 From the root directory, install the deploy dependencies
 
 ```sh
