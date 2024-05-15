@@ -1,0 +1,17 @@
+{
+    "name": "coe-tak",
+    "profile": "coegc",
+    "region": "us-gov-east-1",
+    "tags": [
+        {
+            "Key": "Project",
+            "Value": "tak"
+        },
+        "Owner",
+        "Client"
+    ],
+    "artifacts": {
+        "docker": [
+        ]
+    }
+}
