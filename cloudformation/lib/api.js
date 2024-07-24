@@ -188,9 +188,19 @@ export default {
                 }],
                 ExecutionRoleArn: cf.getAtt('ExecRole', 'Arn'),
                 TaskRoleArn: cf.getAtt('TaskRole', 'Arn'),
+                Volumes: [{
+                    Name: cf.stackName,
+                    EFSVolumeConfiguration: {
+                        FilesystemId: cf.ref('EFSFileSystem')
+                    }
+                }],
                 ContainerDefinitions: [{
                     Name: 'api',
                     Image: cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/coe-ecr-tak:', cf.ref('ServerVersion')]),
+                    MountPoints: [{
+                        ContainerPath: '/opt/tak',
+                        SourceVolume: cf.stackName
+                    }],
                     PortMappings: [{
                         ContainerPort: 5000
                     }],
