@@ -20,7 +20,7 @@ echo "Extracted /tmp/${folder}"
 
 VERSION=$(echo $folder | sed 's/takserver-docker-//' | tr '[:upper:]' '[:lower:]')
 
-docker build -t takserver:${VERSION} -f /tmp/${folder}/docker/Dockerfile.takserver .
+docker build -t takserver:${VERSION} .
 
 AWS_ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
 
