@@ -2,6 +2,10 @@ import cf from '@openaddresses/cloudfriend';
 
 export default {
     Parameters: {
+        HostedDomain: {
+            Description: 'Hosted Domain',
+            Type: 'String'
+        },
         ServerVersion: {
             Description: 'TAK Server Version in ECR',
             Type: 'String'
@@ -63,6 +67,18 @@ export default {
                     ToPort: 80
                 }],
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
+            }
+        },
+        Listener80: {
+            Type: 'AWS::ElasticLoadBalancingV2::Listener',
+            Properties: {
+                DefaultActions: [{
+                    Type: 'forward',
+                    TargetGroupArn: cf.ref('TargetGroup80')
+                }],
+                LoadBalancerArn: cf.ref('ELB'),
+                Port: 80,
+                Protocol: 'TCP'
             }
         },
         Listener443: {
@@ -160,6 +176,16 @@ export default {
             DependsOn: 'ELB',
             Properties: {
                 Port: 8089,
+                Protocol: 'TCP',
+                TargetType: 'ip',
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+            }
+        },
+        TargetGroup80: {
+            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
+            DependsOn: 'ELB',
+            Properties: {
+                Port: 80,
                 Protocol: 'TCP',
                 TargetType: 'ip',
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
@@ -273,20 +299,23 @@ export default {
                     },{
                         ContainerPort: 8089
                     }],
-                    Environment: [
-                        {
-                            Name: 'POSTGRES',
-                            Value: cf.join([
-                                'postgresql://',
-                                cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}'),
-                                ':',
-                                cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}'),
-                                '@',
-                                cf.getAtt('DBInstance', 'Endpoint.Address'),
-                                ':5432/tak_ps_etl?sslmode=require'
-                            ])
-                        },
-                    ],
+                    Environment: [{
+                        Name: 'HostedDomain',
+                        Value: cf.ref('HostedDomain')
+                    },{
+                        Name: 'Postgres_Username',
+                        Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}')
+                    },{
+                        Name: 'Postgres_Password',
+                        Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}'),
+                    },{
+                        Name: 'Postgres_URL',
+                        Value: cf.join([
+                            'postgresql://',
+                            cf.getAtt('DBInstance', 'Endpoint.Address'),
+                            ':5432/tak_ps_etl?sslmode=require'
+                        ])
+                    }],
                     LogConfiguration: {
                         LogDriver: 'awslogs',
                         Options: {
@@ -321,6 +350,10 @@ export default {
                     }
                 },
                 LoadBalancers: [{
+                    ContainerName: 'api',
+                    ContainerPort: 80,
+                    TargetGroupArn: cf.ref('TargetGroup80')
+                },{
                     ContainerName: 'api',
                     ContainerPort: 8443,
                     TargetGroupArn: cf.ref('TargetGroup8443')
