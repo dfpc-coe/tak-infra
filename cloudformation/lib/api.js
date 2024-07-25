@@ -97,7 +97,7 @@ export default {
                 HealthCheckIntervalSeconds: 30,
                 HealthCheckPath: '/api',
                 Port: 8443,
-                Protocol: 'HTTP',
+                Protocol: 'TCP',
                 TargetType: 'ip',
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
                 Matcher: {
