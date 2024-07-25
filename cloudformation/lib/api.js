@@ -65,6 +65,18 @@ export default {
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
             }
         },
+        Listener8444: {
+            Type: 'AWS::ElasticLoadBalancingV2::Listener',
+            Properties: {
+                DefaultActions: [{
+                    Type: 'forward',
+                    TargetGroupArn: cf.ref('TargetGroup')
+                }],
+                LoadBalancerArn: cf.ref('ELB'),
+                Port: 8444,
+                Protocol: 'TCP'
+            }
+        },
         HttpsAltListener: {
             Type: 'AWS::ElasticLoadBalancingV2::Listener',
             Properties: {
@@ -77,32 +89,44 @@ export default {
                 Protocol: 'TCP'
             }
         },
-        HttpsListener: {
-            Type: 'AWS::ElasticLoadBalancingV2::Listener',
-            Properties: {
-                DefaultActions: [{
-                    Type: 'forward',
-                    TargetGroupArn: cf.ref('TargetGroup')
-                }],
-                LoadBalancerArn: cf.ref('ELB'),
-                Port: 443,
-                Protocol: 'TCP'
-            }
-        },
         TargetGroup: {
             Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
             DependsOn: 'ELB',
             Properties: {
-                HealthCheckEnabled: true,
-                HealthCheckIntervalSeconds: 30,
-                HealthCheckPath: '/api',
                 Port: 8443,
                 Protocol: 'TCP',
                 TargetType: 'ip',
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
-                Matcher: {
-                    HttpCode: '200,202,302,304'
-                }
+            }
+        },
+        TargetGroup8444: {
+            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
+            DependsOn: 'ELB',
+            Properties: {
+                Port: 8444,
+                Protocol: 'TCP',
+                TargetType: 'ip',
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+            }
+        },
+        TargetGroup8446: {
+            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
+            DependsOn: 'ELB',
+            Properties: {
+                Port: 8446,
+                Protocol: 'TCP',
+                TargetType: 'ip',
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+            }
+        },
+        TargetGroup8089: {
+            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
+            DependsOn: 'ELB',
+            Properties: {
+                Port: 8089,
+                Protocol: 'TCP',
+                TargetType: 'ip',
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
             }
         },
         TaskRole: {
@@ -264,6 +288,18 @@ export default {
                     ContainerName: 'api',
                     ContainerPort: 8443,
                     TargetGroupArn: cf.ref('TargetGroup')
+                },{
+                    ContainerName: 'api',
+                    ContainerPort: 8444,
+                    TargetGroupArn: cf.ref('TargetGroup8444')
+                },{
+                    ContainerName: 'api',
+                    ContainerPort: 8446,
+                    TargetGroupArn: cf.ref('TargetGroup8446')
+                },{
+                    ContainerName: 'api',
+                    ContainerPort: 8089,
+                    TargetGroupArn: cf.ref('TargetGroup8089')
                 }]
             }
         },
@@ -289,7 +325,7 @@ export default {
                 },{
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
-                    FromPort: 8444,
+                    FromPort: 8446,
                     ToPort: 8446
                 },{
                     CidrIp: '0.0.0.0/0',
