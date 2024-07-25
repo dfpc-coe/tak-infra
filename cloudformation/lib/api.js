@@ -285,7 +285,7 @@ export default {
                 }],
                 ContainerDefinitions: [{
                     Name: 'api',
-                    Image: cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/coe-ecr-tak:', cf.ref('ServerVersion')]),
+                    Image: cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/coe-ecr-tak:', cf.ref('GitSha')]),
                     MountPoints: [{
                         ContainerPath: '/opt/tak',
                         SourceVolume: cf.stackName
