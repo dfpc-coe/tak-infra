@@ -65,31 +65,55 @@ export default {
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
             }
         },
-        Listener8444: {
+        Listener8443: {
             Type: 'AWS::ElasticLoadBalancingV2::Listener',
             Properties: {
                 DefaultActions: [{
                     Type: 'forward',
-                    TargetGroupArn: cf.ref('TargetGroup')
-                }],
-                LoadBalancerArn: cf.ref('ELB'),
-                Port: 8444,
-                Protocol: 'TCP'
-            }
-        },
-        HttpsAltListener: {
-            Type: 'AWS::ElasticLoadBalancingV2::Listener',
-            Properties: {
-                DefaultActions: [{
-                    Type: 'forward',
-                    TargetGroupArn: cf.ref('TargetGroup')
+                    TargetGroupArn: cf.ref('TargetGroup8443')
                 }],
                 LoadBalancerArn: cf.ref('ELB'),
                 Port: 8443,
                 Protocol: 'TCP'
             }
         },
-        TargetGroup: {
+        Listener8444: {
+            Type: 'AWS::ElasticLoadBalancingV2::Listener',
+            Properties: {
+                DefaultActions: [{
+                    Type: 'forward',
+                    TargetGroupArn: cf.ref('TargetGroup8444')
+                }],
+                LoadBalancerArn: cf.ref('ELB'),
+                Port: 8444,
+                Protocol: 'TCP'
+            }
+        },
+        Listener8446: {
+            Type: 'AWS::ElasticLoadBalancingV2::Listener',
+            Properties: {
+                DefaultActions: [{
+                    Type: 'forward',
+                    TargetGroupArn: cf.ref('TargetGroup8446')
+                }],
+                LoadBalancerArn: cf.ref('ELB'),
+                Port: 8446,
+                Protocol: 'TCP'
+            }
+        },
+        Listener8089: {
+            Type: 'AWS::ElasticLoadBalancingV2::Listener',
+            Properties: {
+                DefaultActions: [{
+                    Type: 'forward',
+                    TargetGroupArn: cf.ref('TargetGroup8089')
+                }],
+                LoadBalancerArn: cf.ref('ELB'),
+                Port: 8089,
+                Protocol: 'TCP'
+            }
+        },
+        TargetGroup8443: {
             Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
             DependsOn: 'ELB',
             Properties: {
@@ -287,7 +311,7 @@ export default {
                 LoadBalancers: [{
                     ContainerName: 'api',
                     ContainerPort: 8443,
-                    TargetGroupArn: cf.ref('TargetGroup')
+                    TargetGroupArn: cf.ref('TargetGroup8443')
                 },{
                     ContainerName: 'api',
                     ContainerPort: 8444,
