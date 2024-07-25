@@ -6,6 +6,10 @@ export default {
             Description: 'Hosted Domain',
             Type: 'String'
         },
+        HostedEmail: {
+            Description: 'Hosted Email',
+            Type: 'String'
+        },
         ServerVersion: {
             Description: 'TAK Server Version in ECR',
             Type: 'String'
@@ -41,6 +45,11 @@ export default {
                 }],
                 GroupDescription: 'Allow TAK Traffic into ELB',
                 SecurityGroupIngress: [{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 80,
+                    ToPort: 80
+                },{
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
                     FromPort: 443,
@@ -181,16 +190,6 @@ export default {
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
             }
         },
-        TargetGroup80: {
-            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
-            DependsOn: 'ELB',
-            Properties: {
-                Port: 80,
-                Protocol: 'TCP',
-                TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
-            }
-        },
         TaskRole: {
             Type: 'AWS::IAM::Role',
             Properties: {
@@ -291,6 +290,8 @@ export default {
                         SourceVolume: cf.stackName
                     }],
                     PortMappings: [{
+                        ContainerPort: 80
+                    },{
                         ContainerPort: 8443
                     },{
                         ContainerPort: 8444
@@ -300,6 +301,9 @@ export default {
                         ContainerPort: 8089
                     }],
                     Environment: [{
+                        Name: 'HostedEmail',
+                        Value: cf.ref('HostedEmail')
+                    },{
                         Name: 'HostedDomain',
                         Value: cf.ref('HostedDomain')
                     },{
