@@ -2,10 +2,6 @@ import cf from '@openaddresses/cloudfriend';
 
 export default {
     Parameters: {
-        SSLCertificateIdentifier: {
-            Description: 'ELB SSL Certificate ID',
-            Type: 'String'
-        },
         ServerVersion: {
             Description: 'TAK Server Version in ECR',
             Type: 'String'
@@ -23,7 +19,7 @@ export default {
             Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer',
             Properties: {
                 Name: cf.stackName,
-                Type: 'application',
+                Type: 'network',
                 SecurityGroups: [cf.ref('ELBSecurityGroup')],
                 Subnets:  [
                     cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-a'])),
@@ -39,13 +35,27 @@ export default {
                     Key: 'Name',
                     Value: cf.join('-', [cf.stackName, 'elb-sg'])
                 }],
-                GroupName: cf.join('-', [cf.stackName, 'elb-sg']),
-                GroupDescription: 'Allow 443 and 80 Access to ELB',
+                GroupDescription: 'Allow TAK Traffic into ELB',
                 SecurityGroupIngress: [{
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
                     FromPort: 443,
-                    ToPort: 443
+                    ToPort: 8443
+                },{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 8443,
+                    ToPort: 8443
+                },{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 8444,
+                    ToPort: 8444
+                },{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 8446,
+                    ToPort: 8446
                 },{
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
@@ -55,35 +65,28 @@ export default {
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
             }
         },
+        HttpsAltListener: {
+            Type: 'AWS::ElasticLoadBalancingV2::Listener',
+            Properties: {
+                DefaultActions: [{
+                    Type: 'forward',
+                    TargetGroupArn: cf.ref('TargetGroup')
+                }],
+                LoadBalancerArn: cf.ref('ELB'),
+                Port: 8443,
+                Protocol: 'TCP'
+            }
+        },
         HttpsListener: {
             Type: 'AWS::ElasticLoadBalancingV2::Listener',
             Properties: {
-                Certificates: [{
-                    CertificateArn: cf.join(['arn:', cf.partition, ':acm:', cf.region, ':', cf.accountId, ':certificate/', cf.ref('SSLCertificateIdentifier')])
-                }],
                 DefaultActions: [{
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup')
                 }],
                 LoadBalancerArn: cf.ref('ELB'),
                 Port: 443,
-                Protocol: 'HTTPS'
-            }
-        },
-        HttpListener: {
-            Type: 'AWS::ElasticLoadBalancingV2::Listener',
-            Properties: {
-                DefaultActions: [{
-                    Type: 'redirect',
-                    RedirectConfig: {
-                        Protocol: 'HTTPS',
-                        StatusCode: 'HTTP_301',
-                        Port: 443
-                    }
-                }],
-                LoadBalancerArn: cf.ref('ELB'),
-                Port: 80,
-                Protocol: 'HTTP'
+                Protocol: 'TCP'
             }
         },
         TargetGroup: {
@@ -269,9 +272,8 @@ export default {
             Properties: {
                 Tags: [{
                     Key: 'Name',
-                    Value: cf.join('-', [cf.stackName, 'ec2-sg1'])
+                    Value: cf.join('-', [cf.stackName, 'ec2-sg'])
                 }],
-                GroupName: cf.join('-', [cf.stackName, 'ec2-sg1']),
                 GroupDescription: 'Allow access to TAK ports',
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
                 SecurityGroupIngress: [{
@@ -289,6 +291,11 @@ export default {
                     IpProtocol: 'tcp',
                     FromPort: 8444,
                     ToPort: 8446
+                },{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 8089,
+                    ToPort: 8089
                 }]
             }
         },
