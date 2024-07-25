@@ -1,0 +1,9 @@
+#!/bin/bash
+#
+# Build CoreConfig & Associated Cert Generation
+#
+
+certbot certonly --standalone -d ${HostedDomain}
+
+/opt/tak/configureInDocker.sh init
+

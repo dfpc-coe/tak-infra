@@ -1,6 +1,16 @@
 import cf from '@openaddresses/cloudfriend';
 
 export default {
+    Parameters: {
+        HostedDomain: {
+            Description: 'Hosted Domain',
+            Type: 'String'
+        },
+        ServerVersion: {
+            Description: 'TAK Server Version in ECR',
+            Type: 'String'
+        },
+    },
     Resources: {
         Logs: {
             Type: 'AWS::Logs::LogGroup',
@@ -13,7 +23,7 @@ export default {
             Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer',
             Properties: {
                 Name: cf.stackName,
-                Type: 'application',
+                Type: 'network',
                 SecurityGroups: [cf.ref('ELBSecurityGroup')],
                 Subnets:  [
                     cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-a'])),
@@ -29,13 +39,27 @@ export default {
                     Key: 'Name',
                     Value: cf.join('-', [cf.stackName, 'elb-sg'])
                 }],
-                GroupName: cf.join('-', [cf.stackName, 'elb-sg']),
-                GroupDescription: 'Allow 443 and 80 Access to ELB',
+                GroupDescription: 'Allow TAK Traffic into ELB',
                 SecurityGroupIngress: [{
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
                     FromPort: 443,
                     ToPort: 443
+                },{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 8443,
+                    ToPort: 8443
+                },{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 8444,
+                    ToPort: 8444
+                },{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 8446,
+                    ToPort: 8446
                 },{
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
@@ -45,51 +69,126 @@ export default {
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
             }
         },
-        HttpsListener: {
+        Listener80: {
             Type: 'AWS::ElasticLoadBalancingV2::Listener',
             Properties: {
-                Certificates: [{
-                    CertificateArn: cf.join(['arn:', cf.partition, ':acm:', cf.region, ':', cf.accountId, ':certificate/', cf.ref('SSLCertificateIdentifier')])
-                }],
                 DefaultActions: [{
                     Type: 'forward',
-                    TargetGroupArn: cf.ref('TargetGroup')
-                }],
-                LoadBalancerArn: cf.ref('ELB'),
-                Port: 443,
-                Protocol: 'HTTPS'
-            }
-        },
-        HttpListener: {
-            Type: 'AWS::ElasticLoadBalancingV2::Listener',
-            Properties: {
-                DefaultActions: [{
-                    Type: 'redirect',
-                    RedirectConfig: {
-                        Protocol: 'HTTPS',
-                        StatusCode: 'HTTP_301',
-                        Port: 443
-                    }
+                    TargetGroupArn: cf.ref('TargetGroup80')
                 }],
                 LoadBalancerArn: cf.ref('ELB'),
                 Port: 80,
-                Protocol: 'HTTP'
+                Protocol: 'TCP'
             }
         },
-        TargetGroup: {
+        Listener443: {
+            Type: 'AWS::ElasticLoadBalancingV2::Listener',
+            Properties: {
+                DefaultActions: [{
+                    Type: 'forward',
+                    TargetGroupArn: cf.ref('TargetGroup8443')
+                }],
+                LoadBalancerArn: cf.ref('ELB'),
+                Port: 443,
+                Protocol: 'TCP'
+            }
+        },
+        Listener8443: {
+            Type: 'AWS::ElasticLoadBalancingV2::Listener',
+            Properties: {
+                DefaultActions: [{
+                    Type: 'forward',
+                    TargetGroupArn: cf.ref('TargetGroup8443')
+                }],
+                LoadBalancerArn: cf.ref('ELB'),
+                Port: 8443,
+                Protocol: 'TCP'
+            }
+        },
+        Listener8444: {
+            Type: 'AWS::ElasticLoadBalancingV2::Listener',
+            Properties: {
+                DefaultActions: [{
+                    Type: 'forward',
+                    TargetGroupArn: cf.ref('TargetGroup8444')
+                }],
+                LoadBalancerArn: cf.ref('ELB'),
+                Port: 8444,
+                Protocol: 'TCP'
+            }
+        },
+        Listener8446: {
+            Type: 'AWS::ElasticLoadBalancingV2::Listener',
+            Properties: {
+                DefaultActions: [{
+                    Type: 'forward',
+                    TargetGroupArn: cf.ref('TargetGroup8446')
+                }],
+                LoadBalancerArn: cf.ref('ELB'),
+                Port: 8446,
+                Protocol: 'TCP'
+            }
+        },
+        Listener8089: {
+            Type: 'AWS::ElasticLoadBalancingV2::Listener',
+            Properties: {
+                DefaultActions: [{
+                    Type: 'forward',
+                    TargetGroupArn: cf.ref('TargetGroup8089')
+                }],
+                LoadBalancerArn: cf.ref('ELB'),
+                Port: 8089,
+                Protocol: 'TCP'
+            }
+        },
+        TargetGroup8443: {
             Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
             DependsOn: 'ELB',
             Properties: {
-                HealthCheckEnabled: true,
-                HealthCheckIntervalSeconds: 30,
-                HealthCheckPath: '/api',
-                Port: 5000,
-                Protocol: 'HTTP',
+                Port: 8443,
+                Protocol: 'TCP',
                 TargetType: 'ip',
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
-                Matcher: {
-                    HttpCode: '200,202,302,304'
-                }
+            }
+        },
+        TargetGroup8444: {
+            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
+            DependsOn: 'ELB',
+            Properties: {
+                Port: 8444,
+                Protocol: 'TCP',
+                TargetType: 'ip',
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+            }
+        },
+        TargetGroup8446: {
+            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
+            DependsOn: 'ELB',
+            Properties: {
+                Port: 8446,
+                Protocol: 'TCP',
+                TargetType: 'ip',
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+            }
+        },
+        TargetGroup8089: {
+            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
+            DependsOn: 'ELB',
+            Properties: {
+                Port: 8089,
+                Protocol: 'TCP',
+                TargetType: 'ip',
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+            }
+        },
+        TargetGroup80: {
+            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
+            DependsOn: 'ELB',
+            Properties: {
+                Port: 80,
+                Protocol: 'TCP',
+                TargetType: 'ip',
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
             }
         },
         TaskRole: {
@@ -110,50 +209,11 @@ export default {
                     PolicyDocument: {
                         Statement: [{
                             Effect: 'Allow',
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':s3:::', cf.ref('AssetBucket')]),
-                                cf.join(['arn:', cf.partition, ':s3:::', cf.ref('AssetBucket'), '/*'])
-                            ],
-                            Action: '*'
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'ecr:Describe*',
-                                'ecr:Get*',
-                                'ecr:BatchDeleteImage',
-                                'ecr:List*'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':ecr:', cf.region, ':', cf.accountId, ':repository/coe-ecr-etl-tasks'])
-                            ]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'sqs:PurgeQueue',
-                                'sqs:SendMessage',
-                                'sqs:ChangeMessageVisibility',
-                                'sqs:GetQueueUrl',
-                                'sqs:GetQueueAttributes'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':sqs:', cf.region, ':', cf.accountId, ':', cf.getAtt('HookQueue', 'QueueName')])
-                            ]
-                        },{
-                            Effect: 'Allow',
                             Action: [
                                 'kms:Decrypt',
                                 'kms:GenerateDataKey'
                             ],
                             Resource: [cf.getAtt('KMS', 'Arn')]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'dynamodb:*'
-                            ],
-                            Resource: [
-                                cf.getAtt('DDBTable', 'Arn'),
-                                cf.join([cf.getAtt('DDBTable', 'Arn'), '/*'])
-                            ]
                         },{
                             Effect: 'Allow',
                             Action: [
@@ -163,147 +223,6 @@ export default {
                             ],
                             Resource: [
                                 cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/*'])
-                            ]
-                        },{ // Media Server Permissions
-                            Effect: 'Allow',
-                            Action: [
-                                'ecs:Describe*',
-                                'ecs:Get*',
-                                'ecs:List*',
-                                'ecs:RunTask',
-                                'ecs:StopTask'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':container-instance/coe-ecs-', cf.ref('Environment'), '/*']),
-                                cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':cluster/coe-ecs-', cf.ref('Environment')]),
-                                cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':task/coe-ecs-', cf.ref('Environment'), '/*']),
-                                cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':task-definition/coe-media-', cf.ref('Environment'), ':*']),
-                                cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':task-definition/coe-media-', cf.ref('Environment')])
-                            ]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'iam:PassRole'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':iam::', cf.accountId, ':role/coe-media-*']),
-                                cf.join(['arn:', cf.partition, ':iam::', cf.accountId, ':role/service-role/coe-media-*'])
-                            ]
-                        },{ // Media Server Permissions
-                            Effect: 'Allow',
-                            Action: [
-                                'ec2:DescribeNetworkInterfaces',
-                                'ecs:ListTaskDefinitions'
-                            ],
-                            Resource: '*'
-                        },{ // ------------ Permissions Required to stand up lambda tasks ------------
-                            Effect: 'Allow',
-                            Action: [
-                                'sns:publish'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':sns:', cf.region, ':', cf.accountId, ':', cf.stackName, '-*'])
-                            ]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'cloudformation:DescribeStacks'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':cloudformation:', cf.region, ':', cf.accountId, ':stack/', cf.stackName, '/*'])
-                            ]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'iam:PassRole'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':iam::', cf.accountId, ':role/', cf.stackName])
-                            ]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'cloudformation:*'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':cloudformation:', cf.region, ':', cf.accountId, ':stack/', cf.stackName, '-layer-*'])
-                            ]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'cloudwatch:Describe*'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':cloudwatch:', cf.region, ':', cf.accountId, ':alarm:*'])
-                            ]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'cloudwatch:PutMetricData',
-                                'cloudwatch:GetMetricData'
-                            ],
-                            Resource: [
-                                '*'
-                            ]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'cloudwatch:Get*',
-                                'cloudwatch:List*',
-                                'cloudwatch:PutMetricAlarm',
-                                'cloudwatch:DeleteAlarms'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':cloudwatch:', cf.region, ':', cf.accountId, ':alarm:', cf.stackName, '-layer-*'])
-                            ]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'logs:TagResource',
-                                'logs:CreateLogGroup',
-                                'logs:DeleteLogGroup',
-                                'logs:PutRetentionPolicy',
-                                'logs:describe*',
-                                'logs:get*'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':logs:', cf.region, ':', cf.accountId, ':log-group:/aws/lambda/', cf.stackName, '-layer-*'])
-                            ]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'lambda:*'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':lambda:', cf.region, ':', cf.accountId, ':function:', cf.stackName, '-layer-*'])
-                            ]
-                        },{
-                            Effect: 'Allow', // Create events for scheduled ETL
-                            Action: [
-                                'events:PutRule',
-                                'events:DescribeRule',
-                                'events:ListRules',
-                                'events:PutTargets',
-                                'events:RemoveTargets',
-                                'events:DisableRule',
-                                'events:EnableRule',
-                                'events:DeleteRule'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':events:', cf.region, ':', cf.accountId, ':rule/', cf.stackName, '-*'])
-                            ]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'batch:SubmitJob',
-                                'batch:ListJobs',
-                                'batch:DescribeJobs',
-                                'logs:GetLogEvents',
-                                'batch:CancelJob',
-                                'batch:DescribeJobs'
-                            ],
-                            Resource: [
-                                '*'
                             ]
                         }]
                     }
@@ -346,7 +265,6 @@ export default {
         },
         TaskDefinition: {
             Type: 'AWS::ECS::TaskDefinition',
-            DependsOn: ['SigningSecret'],
             Properties: {
                 Family: cf.stackName,
                 Cpu: 1024,
@@ -359,39 +277,45 @@ export default {
                 }],
                 ExecutionRoleArn: cf.getAtt('ExecRole', 'Arn'),
                 TaskRoleArn: cf.getAtt('TaskRole', 'Arn'),
+                Volumes: [{
+                    Name: cf.stackName,
+                    EFSVolumeConfiguration: {
+                        FilesystemId: cf.ref('EFSFileSystem')
+                    }
+                }],
                 ContainerDefinitions: [{
                     Name: 'api',
-                    Image: cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/coe-ecr-etl:', cf.ref('GitSha')]),
-                    PortMappings: [{
-                        ContainerPort: 5000
+                    Image: cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/coe-ecr-tak:', cf.ref('GitSha')]),
+                    MountPoints: [{
+                        ContainerPath: '/opt/tak',
+                        SourceVolume: cf.stackName
                     }],
-                    Environment: [
-                        {
-                            Name: 'POSTGRES',
-                            Value: cf.join([
-                                'postgresql://',
-                                cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}'),
-                                ':',
-                                cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}'),
-                                '@',
-                                cf.getAtt('DBInstance', 'Endpoint.Address'),
-                                ':5432/tak_ps_etl?sslmode=require'
-                            ])
-                        },
-                        { Name: 'HookURL', Value: cf.ref('HookQueue') },
-                        { Name: 'TileBaseURL', Value: cf.join(['s3://', cf.ref('AssetBucket'), '/zipcodes.tilebase']) },
-                        { Name: 'SigningSecret', Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/api/secret:SecretString::AWSCURRENT}}') },
-                        { Name: 'StackName', Value: cf.stackName },
-                        { Name: 'ASSET_BUCKET', Value: cf.ref('AssetBucket') },
-                        { Name: 'API_URL', Value: cf.ref('HostedURL') },
-                        { Name: 'PMTILES_URL', Value: cf.join(['https://', cf.ref('PMTilesLambdaAPI'), '.execute-api.', cf.region, '.amazonaws.com']) },
-                        { Name: 'MartiAPI', Value: cf.ref('MartiAPI') },
-                        { Name: 'AWS_DEFAULT_REGION', Value: cf.region },
-                        { Name: 'VpcId', Value: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])) },
-                        { Name: 'SubnetPublicA', Value: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-a'])) },
-                        { Name: 'SubnetPublicB', Value: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-b'])) },
-                        { Name: 'MediaSecurityGroup', Value: cf.ref('MediaSecurityGroup') }
-                    ],
+                    PortMappings: [{
+                        ContainerPort: 8443
+                    },{
+                        ContainerPort: 8444
+                    },{
+                        ContainerPort: 8446
+                    },{
+                        ContainerPort: 8089
+                    }],
+                    Environment: [{
+                        Name: 'HostedDomain',
+                        Value: cf.ref('HostedDomain')
+                    },{
+                        Name: 'Postgres_Username',
+                        Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}')
+                    },{
+                        Name: 'Postgres_Password',
+                        Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}'),
+                    },{
+                        Name: 'Postgres_URL',
+                        Value: cf.join([
+                            'postgresql://',
+                            cf.getAtt('DBInstance', 'Endpoint.Address'),
+                            ':5432/tak_ps_etl?sslmode=require'
+                        ])
+                    }],
                     LogConfiguration: {
                         LogDriver: 'awslogs',
                         Options: {
@@ -427,8 +351,24 @@ export default {
                 },
                 LoadBalancers: [{
                     ContainerName: 'api',
-                    ContainerPort: 5000,
-                    TargetGroupArn: cf.ref('TargetGroup')
+                    ContainerPort: 80,
+                    TargetGroupArn: cf.ref('TargetGroup80')
+                },{
+                    ContainerName: 'api',
+                    ContainerPort: 8443,
+                    TargetGroupArn: cf.ref('TargetGroup8443')
+                },{
+                    ContainerName: 'api',
+                    ContainerPort: 8444,
+                    TargetGroupArn: cf.ref('TargetGroup8444')
+                },{
+                    ContainerName: 'api',
+                    ContainerPort: 8446,
+                    TargetGroupArn: cf.ref('TargetGroup8446')
+                },{
+                    ContainerName: 'api',
+                    ContainerPort: 8089,
+                    TargetGroupArn: cf.ref('TargetGroup8089')
                 }]
             }
         },
@@ -439,14 +379,28 @@ export default {
                     Key: 'Name',
                     Value: cf.join('-', [cf.stackName, 'ec2-sg'])
                 }],
-                GroupName: cf.join('-', [cf.stackName, 'ec2-sg']),
-                GroupDescription: 'Allow access to docker port 5000',
+                GroupDescription: 'Allow access to TAK ports',
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
                 SecurityGroupIngress: [{
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
-                    FromPort: 5000,
-                    ToPort: 5000
+                    FromPort: 8443,
+                    ToPort: 8443
+                },{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 8444,
+                    ToPort: 8444
+                },{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 8446,
+                    ToPort: 8446
+                },{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 8089,
+                    ToPort: 8089
                 }]
             }
         },
@@ -477,19 +431,5 @@ export default {
             Description: 'API ELB',
             Value: cf.join(['http://', cf.getAtt('ELB', 'DNSName')])
         },
-        HostedURL: {
-            Description: 'Hosted API Location',
-            Export: {
-                Name: cf.join([cf.stackName, '-hosted'])
-            },
-            Value: cf.ref('HostedURL')
-        },
-        ETLRole: {
-            Description: 'ETL Lambda Role',
-            Export: {
-                Name: cf.join([cf.stackName, '-etl-role'])
-            },
-            Value: cf.getAtt('ETLFunctionRole', 'Arn')
-        }
     }
 };

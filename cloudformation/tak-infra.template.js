@@ -1,14 +1,15 @@
 import cf from '@openaddresses/cloudfriend';
-import SG from './lib/sg.js';
 import RDS from './lib/db.js';
+import API from './lib/api.js';
 import Alarms from './lib/alarms.js';
 import KMS from './lib/kms.js';
+import EFS from './lib/efs.js';
 import {
     RDS as RDSAlarms
 } from '@openaddresses/batch-alarms';
 
 export default cf.merge(
-    SG, RDS, KMS, Alarms,
+    API, RDS, KMS, Alarms, EFS,
     {
         Description: 'Template for @tak-ps/tak-infra',
         Parameters: {
