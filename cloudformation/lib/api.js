@@ -93,7 +93,7 @@ export default {
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
                 HealthCheckPath: '/api',
-                Port: 5000,
+                Port: 8443,
                 Protocol: 'HTTP',
                 TargetType: 'ip',
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
@@ -202,7 +202,13 @@ export default {
                         SourceVolume: cf.stackName
                     }],
                     PortMappings: [{
-                        ContainerPort: 5000
+                        ContainerPort: 8443
+                    },{
+                        ContainerPort: 8444
+                    },{
+                        ContainerPort: 8446
+                    },{
+                        ContainerPort: 8089
                     }],
                     Environment: [
                         {
@@ -253,7 +259,7 @@ export default {
                 },
                 LoadBalancers: [{
                     ContainerName: 'api',
-                    ContainerPort: 5000,
+                    ContainerPort: 8443,
                     TargetGroupArn: cf.ref('TargetGroup')
                 }]
             }
@@ -263,16 +269,26 @@ export default {
             Properties: {
                 Tags: [{
                     Key: 'Name',
-                    Value: cf.join('-', [cf.stackName, 'ec2-sg'])
+                    Value: cf.join('-', [cf.stackName, 'ec2-sg1'])
                 }],
-                GroupName: cf.join('-', [cf.stackName, 'ec2-sg']),
-                GroupDescription: 'Allow access to docker port 5000',
+                GroupName: cf.join('-', [cf.stackName, 'ec2-sg1']),
+                GroupDescription: 'Allow access to TAK ports',
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
                 SecurityGroupIngress: [{
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
-                    FromPort: 5000,
-                    ToPort: 5000
+                    FromPort: 8443,
+                    ToPort: 8443
+                },{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 8444,
+                    ToPort: 8444
+                },{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 8444,
+                    ToPort: 8446
                 }]
             }
         },
