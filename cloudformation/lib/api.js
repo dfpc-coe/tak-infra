@@ -40,7 +40,7 @@ export default {
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
                     FromPort: 443,
-                    ToPort: 8443
+                    ToPort: 443
                 },{
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
@@ -63,6 +63,18 @@ export default {
                     ToPort: 80
                 }],
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
+            }
+        },
+        Listener443: {
+            Type: 'AWS::ElasticLoadBalancingV2::Listener',
+            Properties: {
+                DefaultActions: [{
+                    Type: 'forward',
+                    TargetGroupArn: cf.ref('TargetGroup8443')
+                }],
+                LoadBalancerArn: cf.ref('ELB'),
+                Port: 443,
+                Protocol: 'TCP'
             }
         },
         Listener8443: {
