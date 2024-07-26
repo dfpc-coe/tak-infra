@@ -102,6 +102,16 @@ export default {
                 Protocol: 'TCP'
             }
         },
+        TargetGroup80: {
+            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
+            DependsOn: 'ELB',
+            Properties: {
+                Port: 80,
+                Protocol: 'TCP',
+                TargetType: 'ip',
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+            }
+        },
         Listener8443: {
             Type: 'AWS::ElasticLoadBalancingV2::Listener',
             Properties: {
