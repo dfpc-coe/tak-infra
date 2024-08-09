@@ -69,11 +69,6 @@ export default {
                     IpProtocol: 'tcp',
                     FromPort: 8446,
                     ToPort: 8446
-                },{
-                    CidrIp: '0.0.0.0/0',
-                    IpProtocol: 'tcp',
-                    FromPort: 80,
-                    ToPort: 80
                 }],
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
             }

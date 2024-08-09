@@ -6,6 +6,7 @@
 set -x
 set -euo pipefail
 
+
 certbot certonly -v --standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos
 
 /opt/tak/configureInDocker.sh init
