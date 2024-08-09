@@ -346,7 +346,6 @@ export default {
                 TaskDefinition: cf.ref('TaskDefinition'),
                 LaunchType: 'FARGATE',
                 PropagateTags: 'SERVICE',
-                HealthCheckGracePeriodSeconds: 300,
                 DesiredCount: 1,
                 NetworkConfiguration: {
                     AwsvpcConfiguration: {
@@ -391,6 +390,11 @@ export default {
                 GroupDescription: 'Allow access to TAK ports',
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
                 SecurityGroupIngress: [{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 80,
+                    ToPort: 80
+                },{
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
                     FromPort: 8443,
