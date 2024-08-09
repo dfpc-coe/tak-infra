@@ -6,6 +6,9 @@
 set -x
 set -euo pipefail
 
+. $NVM_DIR/nvm.sh
+
+http-server --port 80
 
 certbot certonly -v --standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos
 
