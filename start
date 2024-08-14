@@ -25,15 +25,17 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
         sleep 10
     done
 
+    /opt/tak/certs/cert-metadata.sh
+
     mkdir -p /ops/tak/certs/${HostedDomain}/
     cp /etc/letsencrypt/live/${HostedDomain}/* /ops/tak/certs/${HostedDomain}/
+
+    cp /ops/tak/certs/${HostedDomain}/ca.pem /ops/tak/certs/files/
+    /opt/tak/certs/makeCert.sh server
 fi
 
 node CoreConfig.js
 mv ./CoreConfig.xml /opt/tak/CoreConfig.xml
-
-/opt/tak/certs/cert-metadata.sh
-/opt/tak/certs/makeCert.sh server
 
 /opt/tak/configureInDocker.sh init
 
