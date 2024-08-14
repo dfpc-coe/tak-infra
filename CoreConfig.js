@@ -8,6 +8,12 @@ for (const env of ['HostedDomain', 'PostgresUsername', 'PostgresPassword', 'Post
     }
 }
 
+const Certificate = {
+    CA: 'TAKServer',
+    O: 'COTAK',
+    OU: 'COTAK-Staging'
+};
+
 const config = {
     Configuration: {
         _attributes: {
@@ -59,7 +65,7 @@ const config = {
                 _attributes: {}
             }
         },
-        // auth: {}
+        // TODO: auth: {}
         submission: {
             _attributes: {
                 ignoreStaleMessages: "false",
@@ -116,6 +122,41 @@ const config = {
                     _name: "TroopsInContact"
                 }
             }]
+        },
+        // TODO: filter: {},
+        buffer: {
+            _attributes: {},
+            queue: {
+                _attributes: {},
+                priority: {
+                    _attributes: {}
+                }
+            }
+        },
+        dissemination: {
+            _attributes: {
+                smartRetry: "false"
+            }
+        },
+        certificateSigning: {
+            _attributes: {
+                CA: Certificate.CA
+            },
+            certificateConfig: {
+                nameEntries: {
+                    nameEntry: [{
+                        _attributes: {
+                            name: 'O',
+                            valie: Certificate.O
+                        }
+                    },{
+                        _attributes: {
+                            name: 'OU',
+                            valie: Certificate.OU
+                        }
+                    }]
+                }
+            }
         }
     }
 }
