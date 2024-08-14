@@ -29,7 +29,7 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
 fi
 
 node CoreConfig.js
-cp ./CoreConfig.xml /opt/tak/CoreConfig.xml
+mv ./CoreConfig.xml /opt/tak/CoreConfig.xml
 
 /opt/tak/configureInDocker.sh init
 

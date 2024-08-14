@@ -1,6 +1,13 @@
 import fs from 'node:fs';
 import xmljs from 'xml-js';
 
+for (const env of ['HostedDomain', 'PostgresUsername', 'PostgresPassword', 'PostgresURL']) {
+    if (!process.env[env]) {
+        console.error(`${env} Environment Variable not set`);
+        process.exit(1);
+    }
+}
+
 const config = {
     Configuration: {
         _attributes: {
@@ -50,6 +57,32 @@ const config = {
             }],
             announce: {
                 _attributes: {}
+            }
+        },
+        // auth: {}
+        submission: {
+            _attributes: {
+                ignoreStaleMessages: "false",
+                validateXml: "false"
+            }
+        },
+        submission: {
+            _attributes: {
+                reloadPersistent: "false"
+            }
+        },
+        repository: {
+            _attributes: {
+                enable: "true",
+                periodMillis: "3000",
+                staleDelayMillis: "15000"
+            },
+            connection: {
+                _attributes: {
+                     url: `jdbc:${process.env.PostgresURL}`,
+                     username: process.env.PostgresUsername,
+                     password: process.env.PostgresPassword
+                }
             }
         }
     }

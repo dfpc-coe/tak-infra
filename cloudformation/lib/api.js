@@ -312,13 +312,13 @@ export default {
                         Name: 'HostedDomain',
                         Value: cf.ref('HostedDomain')
                     },{
-                        Name: 'Postgres_Username',
+                        Name: 'PostgresUsername',
                         Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}')
                     },{
-                        Name: 'Postgres_Password',
+                        Name: 'PostgresPassword',
                         Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}'),
                     },{
-                        Name: 'Postgres_URL',
+                        Name: 'PostgresURL',
                         Value: cf.join([
                             'postgresql://',
                             cf.getAtt('DBInstance', 'Endpoint.Address'),
