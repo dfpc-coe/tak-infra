@@ -41,8 +41,8 @@ const config = {
                     port: "8443",
                     _name: "https",
                     keystore: "JKS",
-                    keystoreFile: "/opt/tak/certs/files/staging-ops.cotak.gov.jks",
-                    keystorePass: "123"
+                    keystoreFile: "/opt/tak/certs/files/takserver-base.jks",
+                    keystorePass: "atakatak"
                 }
             },{
                 _attributes: {

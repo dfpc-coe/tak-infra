@@ -350,7 +350,7 @@ export default {
                         Name: 'ORGANIZATION',
                         Value: cf.ref('CertificateOrg')
                     },{
-                        Name: 'ORGANIZATION_UNIT',
+                        Name: 'ORGANIZATIONAL_UNIT',
                         Value: cf.ref('CertificateOrgUnit')
                     }],
                     LogConfiguration: {
