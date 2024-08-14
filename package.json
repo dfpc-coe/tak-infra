@@ -22,7 +22,8 @@
     },
     "homepage": "https://github.com/dfpc-coe/tak-infra#readme",
     "dependencies": {
-        "@openaddresses/cloudfriend": "^7.0.0"
+        "@openaddresses/cloudfriend": "^7.0.0",
+        "xml-js": "^1.6.11"
     },
     "devDependencies": {
         "@openaddresses/batch-alarms": "^4.1.0",
