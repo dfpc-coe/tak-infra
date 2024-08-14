@@ -17,7 +17,8 @@ fi;
 if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
     echo "No Certificates detected - $(ls /etc/letsencrypt/live/)"
 
-    Command="certbot certonly -v --standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos"
+    #TODO Remove Test Cert
+    Command="certbot certonly -v --test-cert --standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos"
 
     while ! $Command; do
         echo "Command failed, retrying in 10 seconds..."
