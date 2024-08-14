@@ -28,5 +28,8 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
     cp /etc/letsencrypt/live/${HostedDomain}/* /ops/tak/certs/${HostedDomain}/
 fi
 
+node CoreConfig.js
+cp ./CoreConfig.xml /opt/tak/CoreConfig.xml
+
 /opt/tak/configureInDocker.sh init
 
