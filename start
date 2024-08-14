@@ -3,12 +3,27 @@
 # Build CoreConfig & Associated Cert Generation
 #
 
+. $NVM_DIR/nvm.sh
+
 set -x
 set -euo pipefail
 
-. $NVM_DIR/nvm.sh
+# Copy EFS Persisted certs to Let's Encrypt Dir
+if [ -d /ops/tak/certs/${HostedDomain} ]; then
+    cp /ops/tak/certs/${HostedDomain}/* /etc/letsencrypt/live/${HostedDomain}
+fi;
 
-certbot certonly -v --standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos
+# If no LetsEncrypt certs are present - generate a set
+if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
+    echo "No Certificates detected - $(ls /etc/letsencrypt/live/)"
+
+    Command="certbot certonly -v --standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos"
+
+    while ! $Command; do
+        echo "Command failed, retrying in 10 seconds..."
+        sleep 10
+    done
+fi
 
 /opt/tak/configureInDocker.sh init
 
