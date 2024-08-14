@@ -23,6 +23,9 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
         echo "Command failed, retrying in 10 seconds..."
         sleep 10
     done
+
+    mkdir -p /ops/tak/certs/${HostedDomain}/
+    cp /etc/letsencrypt/live/${HostedDomain}/* /ops/tak/certs/${HostedDomain}/
 fi
 
 /opt/tak/configureInDocker.sh init
