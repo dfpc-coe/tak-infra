@@ -84,6 +84,38 @@ const config = {
                      password: process.env.PostgresPassword
                 }
             }
+        },
+        repeater: {
+            _attributes: {
+                enable: "true",
+                periodMillis: "3000",
+                staleDelayMillis: "15000"
+            },
+            repeatableType: [{
+                _attributes: {
+                    'initiate-test': "/event/detail/emergency[@type='911 Alert']",
+                    'cancel-test': "/event/detail/emergency[@cancel='true']",
+                    _name: "911"
+                }
+            },{
+                _attributes: {
+                    'initiate-test': "/event/detail/emergency[@type='Ring The Bell']",
+                    'cancel-test': "/event/detail/emergency[@cancel='true']",
+                    _name: "RingTheBell"
+                }
+            },{
+                _attributes: {
+                    'initiate-test': "/event/detail/emergency[@type='Geo-fence Breached']",
+                    'cancel-test': "/event/detail/emergency[@cancel='true']",
+                    _name: "GeoFenceBreach"
+                }
+            },{
+                _attributes: {
+                    'initiate-test': "/event/detail/emergency[@type='Troops In Contact']",
+                    'cancel-test': "/event/detail/emergency[@cancel='true']",
+                    _name: "TroopsInContact"
+                }
+            }]
         }
     }
 }
