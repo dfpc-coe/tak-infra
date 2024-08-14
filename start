@@ -32,5 +32,8 @@ fi
 node CoreConfig.js
 mv ./CoreConfig.xml /opt/tak/CoreConfig.xml
 
+/opt/tak/certs/cert-metadata.sh
+/opt/tak/certs/makeCert.sh server
+
 /opt/tak/configureInDocker.sh init
 

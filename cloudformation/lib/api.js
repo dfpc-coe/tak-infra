@@ -2,16 +2,32 @@ import cf from '@openaddresses/cloudfriend';
 
 export default {
     Parameters: {
+        CertificateState: {
+            Description: '2 Letter State Code',
+            Type: 'String',
+            Default: 'CO'
+        },
+        CertificateCity: {
+            Description: '2 Letter State Code',
+            Type: 'String',
+            Default: 'Grand-Junction'
+        },
+        CertificateOrg: {
+            Description: 'Organization',
+            Type: 'String',
+            Default: 'TAK'
+        },
+        CertificateOrgUnit: {
+            Description: 'Organization Unit',
+            Type: 'String',
+            Default: 'TAK-Unit'
+        },
         HostedDomain: {
             Description: 'Hosted Domain',
             Type: 'String'
         },
         HostedEmail: {
             Description: 'Hosted Email',
-            Type: 'String'
-        },
-        ServerVersion: {
-            Description: 'TAK Server Version in ECR',
             Type: 'String'
         },
     },
@@ -324,6 +340,18 @@ export default {
                             cf.getAtt('DBInstance', 'Endpoint.Address'),
                             ':5432/tak_ps_etl?sslmode=require'
                         ])
+                    },{
+                        Name: 'STATE',
+                        Value: cf.ref('CertificateState')
+                    },{
+                        Name: 'CITY',
+                        Value: cf.ref('CertificateCity')
+                    },{
+                        Name: 'ORGANIZATION',
+                        Value: cf.ref('CertificateOrg')
+                    },{
+                        Name: 'ORGANIZATION_UNIT',
+                        Value: cf.ref('CertificateOrgUnit')
                     }],
                     LogConfiguration: {
                         LogDriver: 'awslogs',
