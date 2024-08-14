@@ -157,7 +157,11 @@ const config = {
                     }]
                 }
             }
-        }
+        },
+        federation: {},
+        plugins: {},
+        cluster: {},
+        vbm: {}
     }
 }
 
