@@ -5,7 +5,7 @@
     "version": "1.0.1",
     "description": "CloudFormation managed infrastructure for TAK Server",
     "scripts": {
-        "lint": "eslint cloudformation/*.js cloudformation/lib/*.js",
+        "lint": "eslint cloudformation/ CoreConfig.js",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "engines": {

@@ -19,7 +19,7 @@ export default {
             Properties: {
                 FileSystemId: cf.ref('EFSFileSystem'),
                 SubnetId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-a'])),
-                SecurityGroups: [ cf.ref('EFSSecurityGroup') ]
+                SecurityGroups: [cf.ref('EFSSecurityGroup')]
             }
         },
         EFSMountTargetSubnetB: {
@@ -27,7 +27,7 @@ export default {
             Properties: {
                 FileSystemId: cf.ref('EFSFileSystem'),
                 SubnetId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-b'])),
-                SecurityGroups: [ cf.ref('EFSSecurityGroup') ]
+                SecurityGroups: [cf.ref('EFSSecurityGroup')]
             }
         },
         EFSSecurityGroup: {

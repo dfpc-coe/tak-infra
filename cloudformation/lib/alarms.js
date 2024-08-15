@@ -8,6 +8,6 @@ export default {
                 DisplayName: cf.join([cf.stackName, '-alarms']),
                 TopicName: cf.join([cf.stackName, '-alarms'])
             }
-        },
+        }
     }
 };

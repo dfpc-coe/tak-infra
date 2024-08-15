@@ -29,7 +29,7 @@ export default {
         HostedEmail: {
             Description: 'Hosted Email',
             Type: 'String'
-        },
+        }
     },
     Resources: {
         Logs: {
@@ -120,7 +120,7 @@ export default {
                 Port: 80,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
             }
         },
         Listener8443: {
@@ -178,7 +178,7 @@ export default {
                 Port: 8443,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
             }
         },
         TargetGroup8444: {
@@ -188,7 +188,7 @@ export default {
                 Port: 8444,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
             }
         },
         TargetGroup8446: {
@@ -198,7 +198,7 @@ export default {
                 Port: 8446,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
             }
         },
         TargetGroup8089: {
@@ -208,7 +208,7 @@ export default {
                 Port: 8089,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
             }
         },
         TaskRole: {
@@ -332,7 +332,7 @@ export default {
                         Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}')
                     },{
                         Name: 'PostgresPassword',
-                        Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}'),
+                        Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}')
                     },{
                         Name: 'PostgresURL',
                         Value: cf.join([
@@ -471,6 +471,6 @@ export default {
         API: {
             Description: 'API ELB',
             Value: cf.join(['http://', cf.getAtt('ELB', 'DNSName')])
-        },
+        }
     }
 };

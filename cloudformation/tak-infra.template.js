@@ -28,5 +28,5 @@ export default cf.merge(
         prefix: 'Batch',
         topic: cf.ref('AlarmTopic'),
         instance: cf.ref('DBInstance')
-    }),
+    })
 );
