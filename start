@@ -64,5 +64,7 @@ node --version
 node CoreConfig.js
 mv ./CoreConfig.xml /opt/tak/CoreConfig.xml
 
+java -jar /opt/tak/db-utils/SchemaManager.jar upgrade
+
 /opt/tak/configureInDocker.sh init
 
