@@ -13,7 +13,7 @@ if [ -d "/opt/tak/certs/${HostedDomain}" ]; then
     mkdir -p "/etc/letsencrypt/live/${HostedDomain}"
     ls /opt/tak/certs/
     ls /opt/tak/certs/${HostedDomain}/
-    cp "/opt/tak/certs/${HostedDomain}/*" "/etc/letsencrypt/live/${HostedDomain}"
+    cp "/opt/tak/certs/${HostedDomain}/"* "/etc/letsencrypt/live/${HostedDomain}"
 fi;
 
 # If no LetsEncrypt certs are present - generate a set
@@ -47,7 +47,7 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
 fi
 
 if [ ! -f "/opt/tak/certs/files/takserver-base.jks" ]; then
-    cp "/etc/letsencrypt/live/${HostedDomain}/*" "/opt/tak/certs/${HostedDomain}/"
+    cp "/etc/letsencrypt/live/${HostedDomain}/"* "/opt/tak/certs/${HostedDomain}/"
 
     keytool \
         -importkeystore \
