@@ -59,9 +59,11 @@ if [ ! -f "/opt/tak/certs/${HostedDomain}/letsencrypt.jks" ]; then
 fi
 
 if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
-    /opt/tak/certs/makeRootCa.sh
+    /opt/tak/certs/cert-metadata.sh
 
-    /opt/tak/certs/makeCert.sh "server"
+    /opt/tak/certs/makeRootCa.sh root
+
+    CA_NAME="takserver-root" /opt/tak/certs/makeCert.sh
 
     /opt/tak/certs/makeCert.sh ca intermediate-ca
     yes | /opt/tak/certs/makeCert.sh server takserver
