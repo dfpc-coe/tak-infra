@@ -60,9 +60,8 @@ fi
 
 if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
     cd /opt/tak/certs/
-    ./makeRootCa.sh root
 
-    CA_NAME="takserver-root" ./makeCert.sh
+    CA_NAME="takserver-root" ./makeRootCa.sh
 
     ./makeCert.sh ca intermediate-ca
     yes | ./makeCert.sh server takserver
