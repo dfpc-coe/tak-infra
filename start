@@ -60,6 +60,7 @@ if [ ! -f "/opt/tak/certs/files/takserver-base.jks" ]; then
     /opt/tak/certs/makeCert.sh "server"
 fi
 
+node --version
 node CoreConfig.js
 mv ./CoreConfig.xml /opt/tak/CoreConfig.xml
 

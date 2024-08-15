@@ -2,7 +2,10 @@ FROM eclipse-temurin:17-jammy
 RUN apt update \
     && apt-get install -y emacs-nox net-tools netcat vim certbot curl
 
-COPY ./ ./
+ENV HOME=/home/server
+WORKDIR $HOME
+
+COPY ./ $HOME/
 
 EXPOSE 80
 EXPOSE 443
