@@ -35,29 +35,33 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
     openssl x509 \
         -text \
         -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem" \
-         -noout
+        -noout
 
     openssl pkcs12 \
         -export \
         -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem" \
         -inkey "/etc/letsencrypt/live/${HostedDomain}/privkey.pem" \
-        -out "/opt/tak/certs/${HostedDomain}/takserver-base.p12" \
+        -out "/opt/tak/certs/${HostedDomain}/letsencrypt.p12" \
         -name "${HostedDomain}" \
         -password "pass:atakatak"
 fi
 
-if [ ! -f "/opt/tak/certs/files/takserver-base.jks" ]; then
+if [ ! -f "/opt/tak/certs/${HostedDomain}/letsencrypt.jks" ]; then
     cp "/etc/letsencrypt/live/${HostedDomain}/"* "/opt/tak/certs/${HostedDomain}/"
 
     keytool \
         -importkeystore \
         -srcstorepass "atakatak" \
         -deststorepass "atakatak" \
-        -destkeystore "/opt/tak/certs/files/takserver-base.jks" \
-        -srckeystore "/opt/tak/certs/${HostedDomain}/takserver-base.p12" \
+        -destkeystore "/opt/tak/certs/${HostedDomain}/letsencrypt.jks" \
+        -srckeystore "/opt/tak/certs/${HostedDomain}/letsencrypt.p12" \
         -srcstoretype "pkcs12"
 
     /opt/tak/certs/makeCert.sh "server"
+fi
+
+if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
+    /opt/tak/certs/makeRootCa.sh
 fi
 
 node --version

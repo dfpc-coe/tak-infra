@@ -1,6 +1,6 @@
 FROM eclipse-temurin:17-jammy
 RUN apt update \
-    && apt-get install -y emacs-nox net-tools netcat vim certbot curl
+    && apt-get install -y emacs-nox net-tools netcat vim certbot curl libxml2-utils
 
 ENV HOME=/home/server
 WORKDIR $HOME

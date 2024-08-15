@@ -41,23 +41,17 @@ const config = {
                     port: "8443",
                     _name: "https",
                     keystore: "JKS",
-                    keystoreFile: "/opt/tak/certs/files/takserver-base.jks",
-                    keystorePass: "atakatak"
+                    keystoreFile: `/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks`,
+                    keystorePass: 'atakatak'
                 }
-            },{
-                _attributes: {
-                     port: "8444",
-                     useFederationTruststore: "true",
-                     _name: "fed_https"
-                 }
-            },{
+            }, {
                 _attributes: {
                     port: "8446",
                     clientAuth: "false",
                     _name: "cert_https",
                     keystore: "JKS",
-                    keystoreFile: "/opt/tak/certs/staging-ops.cotak.gov/staging-ops.cotak.gov.jks",
-                    keystorePass: "9VF2kJSzf15UL0GBUv0W",
+                    keystoreFile: `/opt/tak/certs/${HostedDomain}/letsencrypt.jks`,
+                    keystorePass: 'atakatak',
                     enableNonAdminUI: "false"
                 }
             }],
@@ -158,6 +152,27 @@ const config = {
                 }
             }
         },
+        security: {
+            tls: {
+                _attributes: {
+                    keystore: "JKS",
+                    keystoreFile: "/opt/tak/certs/files/takserver-base.jks",
+                    keystorePass: "atakatak",
+                    truststore: "JKS",
+                    truststoreFile: "/opt/tak/certs/files/truststore-tak-int-ca-dev.jks",
+                    truststorePass: "atakatak",
+                    context: "TLSv1.2",
+                    keymanager: "SunX509"
+                }
+            }
+            missionTls: {
+                _attributes: {
+                    keystore: "JKS",
+                    keystoreFile: "/opt/tak/certs/files/takserver-base.jks",
+                    keystorePass: "atakatak"
+                }
+            }
+        },
         federation: {},
         plugins: {},
         cluster: {},
@@ -170,4 +185,7 @@ const xml = xmljs.js2xml(config, {
     compact: true
 })
 
-fs.writeFileSync('./CoreConfig.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n${xml}`);
+fs.writeFileSync(
+    './CoreConfig.xml',
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n${xml}`
+);
