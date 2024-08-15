@@ -11,6 +11,8 @@ set -euo pipefail
 # Copy EFS Persisted certs to Let's Encrypt Dir
 if [ -d "/opt/tak/certs/${HostedDomain}" ]; then
     mkdir -p "/etc/letsencrypt/live/${HostedDomain}"
+    ls /opt/tak/certs/
+    ls /opt/tak/certs/${HostedDomain}/
     cp "/opt/tak/certs/${HostedDomain}/*" "/etc/letsencrypt/live/${HostedDomain}"
 fi;
 
