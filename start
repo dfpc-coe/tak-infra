@@ -56,12 +56,16 @@ if [ ! -f "/opt/tak/certs/${HostedDomain}/letsencrypt.jks" ]; then
         -destkeystore "/opt/tak/certs/${HostedDomain}/letsencrypt.jks" \
         -srckeystore "/opt/tak/certs/${HostedDomain}/letsencrypt.p12" \
         -srcstoretype "pkcs12"
-
-    /opt/tak/certs/makeCert.sh "server"
 fi
 
 if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
     /opt/tak/certs/makeRootCa.sh
+
+    /opt/tak/certs/makeCert.sh "server"
+
+    /opt/tak/certs/makeCert.sh ca intermediate-ca
+    yes | /opt/tak/certs/makeCert.sh server takserver
+    yes | /opt/tak/certs/makeCert.sh client admin
 fi
 
 node --version
