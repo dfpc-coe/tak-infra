@@ -9,9 +9,9 @@ set -x
 set -euo pipefail
 
 # Copy EFS Persisted certs to Let's Encrypt Dir
-if [ -d "/ops/tak/certs/${HostedDomain}" ]; then
-    mkdir -o "/etc/letsencrypt/live/${HostedDomain}"
-    cp "/ops/tak/certs/${HostedDomain}/*" "/etc/letsencrypt/live/${HostedDomain}"
+if [ -d "/opt/tak/certs/${HostedDomain}" ]; then
+    mkdir -p "/etc/letsencrypt/live/${HostedDomain}"
+    cp "/opt/tak/certs/${HostedDomain}/*" "/etc/letsencrypt/live/${HostedDomain}"
 fi;
 
 # If no LetsEncrypt certs are present - generate a set
@@ -28,7 +28,7 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
 
     /opt/tak/certs/cert-metadata.sh
 
-    mkdir -p "/ops/tak/certs/${HostedDomain}/"
+    mkdir -p "/opt/tak/certs/${HostedDomain}/"
 
     openssl x509 \
         -text \
@@ -39,23 +39,24 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
         -export \
         -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem" \
         -inkey "/etc/letsencrypt/live/${HostedDomain}/privkey.pem" \
-        -out "/ops/tak/certs/${HostedDomain}/takserver-base.p12" \
+        -out "/opt/tak/certs/${HostedDomain}/takserver-base.p12" \
         -name "${HostedDomain}" \
         -password "pass:atakatak"
 fi
 
-if [ ! -f "/ops/tak/certs/files/takserver-base.jks" ]; then
-    cp "/etc/letsencrypt/live/${HostedDomain}/*" "/ops/tak/certs/${HostedDomain}/"
+if [ ! -f "/opt/tak/certs/files/takserver-base.jks" ]; then
+    cp "/etc/letsencrypt/live/${HostedDomain}/*" "/opt/tak/certs/${HostedDomain}/"
 
     keytool \
         -importkeystore \
         -srcstorepass "atakatak" \
         -deststorepass "atakatak" \
-        -destkeystore "/ops/tak/certs/files/takserver-base.jks" \
-        -srckeystore "/ops/tak/certs/${HostedDomain}/takserver-base.p12" \
+        -destkeystore "/opt/tak/certs/files/takserver-base.jks" \
+        -srckeystore "/opt/tak/certs/${HostedDomain}/takserver-base.p12" \
         -srcstoretype "pkcs12"
 
-    cp "/ops/tak/certs/${HostedDomain}/takserver-base.jks" "/ops/tak/certs/files/"
+    cp "/opt/tak/certs/${HostedDomain}/takserver-base.jks" "/opt/tak/certs/files/"
+
     /opt/tak/certs/makeCert.sh "server"
 fi
 
