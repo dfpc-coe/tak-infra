@@ -57,8 +57,6 @@ if [ ! -f "/opt/tak/certs/files/takserver-base.jks" ]; then
         -srckeystore "/opt/tak/certs/${HostedDomain}/takserver-base.p12" \
         -srcstoretype "pkcs12"
 
-    cp "/opt/tak/certs/${HostedDomain}/takserver-base.jks" "/opt/tak/certs/files/"
-
     /opt/tak/certs/makeCert.sh "server"
 fi
 
