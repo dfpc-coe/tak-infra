@@ -159,7 +159,7 @@ const config = {
                     keystoreFile: '/opt/tak/certs/files/truststore-root.jks',
                     keystorePass: 'atakatak',
                     truststore: 'JKS',
-                    truststoreFile: '/opt/tak/certs/files/truststore-tak-int-ca-dev.jks',
+                    truststoreFile: '/opt/tak/certs/files/truststore-intermediate-ca.jks',
                     truststorePass: 'atakatak',
                     context: 'TLSv1.2',
                     keymanager: 'SunX509'
@@ -168,7 +168,7 @@ const config = {
             missionTls: {
                 _attributes: {
                     keystore: 'JKS',
-                    keystoreFile: '/opt/tak/certs/files/takserver-base.jks',
+                    keystoreFile: '/opt/tak/certs/files/truststore-root.jks',
                     keystorePass: 'atakatak'
                 }
             }
