@@ -7,6 +7,7 @@ export default [
     {
         "rules": {
             "no-console": 0,
+            "n/no-process-exit": "warn",
             "arrow-parens": [ "error", "always" ],
             "no-var": "error",
             "prefer-const": "error",
