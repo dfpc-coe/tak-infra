@@ -23,15 +23,34 @@ export default cf.merge({
                         ObjectOwnership: 'BucketOwnerEnforced'
                     }]
                 },
-                "WebsiteConfiguration": {
-                    "IndexDocument":"index.html",
-                    "ErrorDocument":"404.html"
+                WebsiteConfiguration: {
+                    IndexDocument: "index.html",
+                    ErrorDocument: "404.html"
                 },
                 PublicAccessBlockConfiguration: {
                     BlockPublicAcls: false,
                     BlockPublicPolicy: false,
                     IgnorePublicAcls: false,
                     RestrictPublicBuckets: false
+                }
+            }
+        },
+        AssetBucketPolicy: {
+            Type: "AWS::S3::BucketPolicy",
+            Properties: {
+                Bucket: cf.ref('AssetBucket'),
+                PolicyDocument: {
+                    Version: "2012-10-17",
+                    Statement: [{
+                        Sid: "Statement1",
+                        Effect: "Allow",
+                        Principal: "*",
+                        Action: ["s3:GetObject"],
+                        Resource: [
+                            cf.join(['arn:', cf.partition, ':s3:::', cf.ref('AssetBucket'), '/*']),
+                            cf.join(['arn:', cf.partition, ':s3:::', cf.ref('AssetBucket')])
+                        ]
+                    }]
                 }
             }
         }
