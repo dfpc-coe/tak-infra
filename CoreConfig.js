@@ -73,9 +73,10 @@ const config = {
         },
         repository: {
             _attributes: {
-                enable: 'true',
-                periodMillis: '3000',
-                staleDelayMillis: '15000'
+                enable: 'true'
+                numDbConnections: "16",
+                primaryKeyBatchSize: "500",
+                insertionBatchSize: "500"
             },
             connection: {
                 _attributes: {
@@ -125,6 +126,11 @@ const config = {
                 priority: {
                     _attributes: {}
                 }
+            },
+            latestSA: {
+                _attributes: {
+                    enable: "true"
+                }
             }
         },
         dissemination: {
@@ -136,17 +142,28 @@ const config = {
             _attributes: {
                 CA: Certificate.CA
             },
+            TAKServerCAConfig: {
+                _attributes: {
+                    keystore: "JKS",
+                    keystoreFile: "/opt/tak/certs/files/intermediate-ca-signing.jks",
+                    keystorePass: "atakatak",
+                    validityDays: "365",
+                    signatureAlg: "SHA256WithRSA",
+                    CAkey: "/opt/tak/certs/files/intermediate-ca-signing",
+                    CAcertificate: "/opt/tak/certs/files/intermediate-ca-signing"
+                }
+            },
             certificateConfig: {
                 nameEntries: {
                     nameEntry: [{
                         _attributes: {
                             name: 'O',
-                            valie: Certificate.O
+                            value: Certificate.O
                         }
                     },{
                         _attributes: {
                             name: 'OU',
-                            valie: Certificate.OU
+                            value: Certificate.OU
                         }
                     }]
                 }
@@ -171,6 +188,14 @@ const config = {
                     keystoreFile: '/opt/tak/certs/files/truststore-root.jks',
                     keystorePass: 'atakatak'
                 }
+            }
+        },
+        locate: {
+            _attributes: {
+                enabled: "true",
+                requireLogin: "false",
+                group: "DEMO - Demonstrations",
+                mission: "cotak-locator"
             }
         },
         federation: {},
