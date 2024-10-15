@@ -24,8 +24,8 @@ export default cf.merge({
                     }]
                 },
                 WebsiteConfiguration: {
-                    IndexDocument: "index.html",
-                    ErrorDocument: "404.html"
+                    IndexDocument: 'index.html',
+                    ErrorDocument: '404.html'
                 },
                 PublicAccessBlockConfiguration: {
                     BlockPublicAcls: false,
@@ -36,16 +36,16 @@ export default cf.merge({
             }
         },
         AssetBucketPolicy: {
-            Type: "AWS::S3::BucketPolicy",
+            Type: 'AWS::S3::BucketPolicy',
             Properties: {
                 Bucket: cf.ref('AssetBucket'),
                 PolicyDocument: {
-                    Version: "2012-10-17",
+                    Version: '2012-10-17',
                     Statement: [{
-                        Sid: "Statement1",
-                        Effect: "Allow",
-                        Principal: "*",
-                        Action: ["s3:GetObject"],
+                        Sid: 'Statement1',
+                        Effect: 'Allow',
+                        Principal: '*',
+                        Action: ['s3:GetObject'],
                         Resource: [
                             cf.join(['arn:', cf.partition, ':s3:::', cf.ref('AssetBucket'), '/*']),
                             cf.join(['arn:', cf.partition, ':s3:::', cf.ref('AssetBucket')])

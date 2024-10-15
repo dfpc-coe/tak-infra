@@ -8,7 +8,7 @@ export default {
             Default: 'CO'
         },
         CertificateCity: {
-            Description: '2 Letter State Code',
+            Description: 'City Name',
             Type: 'String',
             Default: 'Grand-Junction'
         },
@@ -322,6 +322,9 @@ export default {
                         ContainerPort: 8089
                     }],
                     Environment: [{
+                        Name: 'StackName',
+                        Value: cf.stackName
+                    },{
                         Name: 'HostedEmail',
                         Value: cf.ref('HostedEmail')
                     },{

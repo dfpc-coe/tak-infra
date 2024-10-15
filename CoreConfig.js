@@ -9,9 +9,9 @@ for (const env of ['HostedDomain', 'PostgresUsername', 'PostgresPassword', 'Post
 }
 
 const Certificate = {
-    CA: 'TAKServer',
-    O: 'COTAK',
-    OU: 'COTAK-Staging'
+    CA: process.env.stackName || 'TAKServer',
+    O: process.env.ORGANIZATION || 'COTAK',
+    OU: process.env.ORGANIZATIONAL_UNIT || 'COTAK-Staging'
 };
 
 const config = {
