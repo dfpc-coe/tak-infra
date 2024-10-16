@@ -73,7 +73,7 @@ const config = {
         },
         repository: {
             _attributes: {
-                enable: 'true'
+                enable: 'true',
                 numDbConnections: "16",
                 primaryKeyBatchSize: "500",
                 insertionBatchSize: "500"
