@@ -74,9 +74,9 @@ const config = {
         repository: {
             _attributes: {
                 enable: 'true',
-                numDbConnections: "16",
-                primaryKeyBatchSize: "500",
-                insertionBatchSize: "500"
+                numDbConnections: '16',
+                primaryKeyBatchSize: '500',
+                insertionBatchSize: '500'
             },
             connection: {
                 _attributes: {
@@ -129,7 +129,7 @@ const config = {
             },
             latestSA: {
                 _attributes: {
-                    enable: "true"
+                    enable: 'true'
                 }
             }
         },
@@ -144,13 +144,13 @@ const config = {
             },
             TAKServerCAConfig: {
                 _attributes: {
-                    keystore: "JKS",
-                    keystoreFile: "/opt/tak/certs/files/intermediate-ca-signing.jks",
-                    keystorePass: "atakatak",
-                    validityDays: "365",
-                    signatureAlg: "SHA256WithRSA",
-                    CAkey: "/opt/tak/certs/files/intermediate-ca-signing",
-                    CAcertificate: "/opt/tak/certs/files/intermediate-ca-signing"
+                    keystore: 'JKS',
+                    keystoreFile: '/opt/tak/certs/files/intermediate-ca-signing.jks',
+                    keystorePass: 'atakatak',
+                    validityDays: '365',
+                    signatureAlg: 'SHA256WithRSA',
+                    CAkey: '/opt/tak/certs/files/intermediate-ca-signing',
+                    CAcertificate: '/opt/tak/certs/files/intermediate-ca-signing'
                 }
             },
             certificateConfig: {
@@ -192,10 +192,10 @@ const config = {
         },
         locate: {
             _attributes: {
-                enabled: "true",
-                requireLogin: "false",
-                group: "DEMO - Demonstrations",
-                mission: "cotak-locator"
+                enabled: 'true',
+                requireLogin: 'false',
+                group: 'DEMO - Demonstrations',
+                mission: 'cotak-locator'
             }
         },
         federation: {},
