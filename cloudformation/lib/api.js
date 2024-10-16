@@ -113,16 +113,6 @@ export default {
                 Protocol: 'TCP'
             }
         },
-        TargetGroup80: {
-            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
-            DependsOn: 'ELB',
-            Properties: {
-                Port: 80,
-                Protocol: 'TCP',
-                TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
-            }
-        },
         Listener8443: {
             Type: 'AWS::ElasticLoadBalancingV2::Listener',
             Properties: {
@@ -171,6 +161,23 @@ export default {
                 Protocol: 'TCP'
             }
         },
+        TargetGroup80: {
+            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
+            DependsOn: 'ELB',
+            Properties: {
+                Port: 80,
+                Protocol: 'TCP',
+                TargetType: 'ip',
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+
+                HealthCheckEnabled: true,
+                HealthCheckIntervalSeconds: 30,
+                HealthCheckPort: 443,
+                HealthCheckProtocol: 'TCP',
+                HealthCheckTimeoutSeconds: 10,
+                HealthyThresholdCount: 5
+            }
+        },
         TargetGroup8443: {
             Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
             DependsOn: 'ELB',
@@ -178,7 +185,14 @@ export default {
                 Port: 8443,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+
+                HealthCheckEnabled: true,
+                HealthCheckIntervalSeconds: 30,
+                HealthCheckPort: 443,
+                HealthCheckProtocol: 'TCP',
+                HealthCheckTimeoutSeconds: 10,
+                HealthyThresholdCount: 5
             }
         },
         TargetGroup8444: {
@@ -188,7 +202,14 @@ export default {
                 Port: 8444,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+
+                HealthCheckEnabled: true,
+                HealthCheckIntervalSeconds: 30,
+                HealthCheckPort: 443,
+                HealthCheckProtocol: 'TCP',
+                HealthCheckTimeoutSeconds: 10,
+                HealthyThresholdCount: 5
             }
         },
         TargetGroup8446: {
@@ -198,7 +219,14 @@ export default {
                 Port: 8446,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+
+                HealthCheckEnabled: true,
+                HealthCheckIntervalSeconds: 30,
+                HealthCheckPort: 443,
+                HealthCheckProtocol: 'TCP',
+                HealthCheckTimeoutSeconds: 10,
+                HealthyThresholdCount: 5
             }
         },
         TargetGroup8089: {
@@ -208,7 +236,14 @@ export default {
                 Port: 8089,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+
+                HealthCheckEnabled: true,
+                HealthCheckIntervalSeconds: 30,
+                HealthCheckPort: 443,
+                HealthCheckProtocol: 'TCP',
+                HealthCheckTimeoutSeconds: 10,
+                HealthyThresholdCount: 5
             }
         },
         TaskRole: {
@@ -338,11 +373,7 @@ export default {
                         Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}')
                     },{
                         Name: 'PostgresURL',
-                        Value: cf.join([
-                            'postgresql://',
-                            cf.getAtt('DBInstance', 'Endpoint.Address'),
-                            ':5432/tak_ps_etl?sslmode=require'
-                        ])
+                        Value: cf.join([ 'postgresql://', cf.getAtt('DBInstance', 'Endpoint.Address'), ':5432/tak_ps_etl' ])
                     },{
                         Name: 'STATE',
                         Value: cf.ref('CertificateState')

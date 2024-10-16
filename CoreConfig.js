@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import xmljs from 'xml-js';
 
-for (const env of ['HostedDomain', 'PostgresUsername', 'PostgresPassword', 'PostgresURL']) {
+for (const env of ['HostedDomain', 'PostgresUsername', 'PostgresPassword', 'PostgresURL', 'TAK_VERSION']) {
     if (!process.env[env]) {
         console.error(`${env} Environment Variable not set`);
         process.exit(1);
@@ -23,9 +23,9 @@ const config = {
             _attributes: {
                 multicastTTL: '5',
                 serverId: 'b67d1db9c8fa45738a547c491071d746',
-                version: '5.2-RELEASE-16-HEAD',
+                version: process.env.TAK_VERSION,
                 cloudwatchEnable: 'true',
-                cloudwatchName: 'cotak-staging'
+                cloudwatchName: process.env.StackName
             },
             input: {
                 _attributes: {
