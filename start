@@ -70,6 +70,9 @@ fi
 
 node --version
 node CoreConfig.js
+
+./validateConfig.sh ./CoreConfig.xml
+
 mv ./CoreConfig.xml /opt/tak/CoreConfig.xml
 
 java -jar ./db-utils/SchemaManager.jar upgrade

@@ -9,7 +9,6 @@ for (const env of ['HostedDomain', 'PostgresUsername', 'PostgresPassword', 'Post
 }
 
 const Certificate = {
-    CA: process.env.StackName || 'TAKServer',
     O: process.env.ORGANIZATION || 'COTAK',
     OU: process.env.ORGANIZATIONAL_UNIT || 'COTAK-Staging'
 };
@@ -22,7 +21,7 @@ const config = {
         network: {
             _attributes: {
                 multicastTTL: '5',
-                serverId: 'b67d1db9c8fa45738a547c491071d746',
+                // TODO serverId: 'b67d1db9c8fa45738a547c491071d746',
                 version: process.env.TAK_VERSION,
                 cloudwatchEnable: 'true',
                 cloudwatchName: process.env.StackName
@@ -59,7 +58,7 @@ const config = {
                 _attributes: {}
             }
         },
-        // TODO: auth: {}
+        auth: {},
         submission: {
             _attributes: {
                 ignoreStaleMessages: 'false',
@@ -118,7 +117,9 @@ const config = {
                 }
             }]
         },
-        // TODO: filter: {},
+        filter: {
+            _attributes: {},
+        },
         buffer: {
             _attributes: {},
             queue: {
@@ -140,18 +141,7 @@ const config = {
         },
         certificateSigning: {
             _attributes: {
-                CA: Certificate.CA
-            },
-            TAKServerCAConfig: {
-                _attributes: {
-                    keystore: 'JKS',
-                    keystoreFile: '/opt/tak/certs/files/intermediate-ca-signing.jks',
-                    keystorePass: 'atakatak',
-                    validityDays: '365',
-                    signatureAlg: 'SHA256WithRSA',
-                    CAkey: '/opt/tak/certs/files/intermediate-ca-signing',
-                    CAcertificate: '/opt/tak/certs/files/intermediate-ca-signing'
-                }
+                CA: 'TAKServer'
             },
             certificateConfig: {
                 nameEntries: {
@@ -167,7 +157,18 @@ const config = {
                         }
                     }]
                 }
-            }
+            },
+            TAKServerCAConfig: {
+                _attributes: {
+                    keystore: 'JKS',
+                    keystoreFile: '/opt/tak/certs/files/intermediate-ca-signing.jks',
+                    keystorePass: 'atakatak',
+                    validityDays: '365',
+                    signatureAlg: 'SHA256WithRSA',
+                    CAkey: '/opt/tak/certs/files/intermediate-ca-signing',
+                    CAcertificate: '/opt/tak/certs/files/intermediate-ca-signing'
+                }
+            },
         },
         security: {
             tls: {
@@ -198,7 +199,6 @@ const config = {
                 mission: 'cotak-locator'
             }
         },
-        federation: {},
         plugins: {},
         cluster: {},
         vbm: {}
