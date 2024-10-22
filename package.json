@@ -23,6 +23,7 @@
     "homepage": "https://github.com/dfpc-coe/tak-infra#readme",
     "dependencies": {
         "@openaddresses/cloudfriend": "^7.0.0",
+        "jks-js": "^1.1.4",
         "xml-js": "^1.6.11"
     },
     "devDependencies": {

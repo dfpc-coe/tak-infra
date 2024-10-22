@@ -265,6 +265,16 @@ export default {
                         Statement: [{
                             Effect: 'Allow',
                             Action: [
+                                'ssmmessages:CreateControlChannel',
+                                'ssmmessages:CreateDataChannel',
+                                'ssmmessages:OpenControlChannel',
+                                'ssmmessages:OpenDataChannel'
+                            ],
+                            Resource: '*'
+                            // Resource: cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':cluster/coe-ecs-', cf.ref('Environment')])
+                        },{
+                            Effect: 'Allow',
+                            Action: [
                                 'kms:Decrypt',
                                 'kms:GenerateDataKey'
                             ],
@@ -373,7 +383,7 @@ export default {
                         Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}')
                     },{
                         Name: 'PostgresURL',
-                        Value: cf.join([ 'postgresql://', cf.getAtt('DBInstance', 'Endpoint.Address'), ':5432/tak_ps_etl' ])
+                        Value: cf.join(['postgresql://', cf.getAtt('DBInstance', 'Endpoint.Address'), ':5432/tak_ps_etl'])
                     },{
                         Name: 'STATE',
                         Value: cf.ref('CertificateState')
@@ -408,6 +418,7 @@ export default {
                 TaskDefinition: cf.ref('TaskDefinition'),
                 LaunchType: 'FARGATE',
                 PropagateTags: 'SERVICE',
+                EnableExecuteCommand: true,
                 DesiredCount: 1,
                 NetworkConfiguration: {
                     AwsvpcConfiguration: {

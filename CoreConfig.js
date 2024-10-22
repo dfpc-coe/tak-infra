@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import jks from 'jks-js';
 import xmljs from 'xml-js';
 
 for (const env of ['HostedDomain', 'PostgresUsername', 'PostgresPassword', 'PostgresURL', 'TAK_VERSION']) {
@@ -118,7 +119,7 @@ const config = {
             }]
         },
         filter: {
-            _attributes: {},
+            _attributes: {}
         },
         buffer: {
             _attributes: {},
@@ -168,7 +169,7 @@ const config = {
                     CAkey: '/opt/tak/certs/files/intermediate-ca-signing',
                     CAcertificate: '/opt/tak/certs/files/intermediate-ca-signing'
                 }
-            },
+            }
         },
         security: {
             tls: {
@@ -205,6 +206,41 @@ const config = {
     }
 };
 
+if (config.Configuration.network.connector) {
+    if (!config.Configuration.network.connector) {
+        config.Configuration.network.connector = [config.Configuration.network.connector];
+    }
+
+    for (const connector of config.Configuration.network.connector) {
+        validateKeystore(connector._attributes.keystoreFile, connector._attributes.keystorePass);
+    }
+} else {
+    console.warn('No Network Connectors Found');
+}
+
+if (config.Configuration.certificateSigning.TAKServerCAConfig) {
+    validateKeystore(
+        config.Configuration.certificateSigning.TAKServerCAConfig._attributes.keystoreFile,
+        config.Configuration.certificateSigning.TAKServerCAConfig._attributes.keystorePass
+    );
+}
+
+if (config.Configuration.security) {
+    if (config.Configuration.security.tls) {
+        validateKeystore(
+            config.Configuration.security.tls._attributes.keystoreFile,
+            config.Configuration.security.tls._attributes.keystorePass
+        );
+    }
+
+    if (config.Configuration.security.missionTls) {
+        validateKeystore(
+            config.Configuration.security.missionTls._attributes.keystoreFile,
+            config.Configuration.security.missionTls._attributes.keystorePastw
+        );
+    }
+}
+
 const xml = xmljs.js2xml(config, {
     spaces: 4,
     compact: true
@@ -214,3 +250,9 @@ fs.writeFileSync(
     './CoreConfig.xml',
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n${xml}`
 );
+
+function validateKeystore(file, pass) {
+    fs.accessSync(file);
+    const jksBuffer = fs.readFileSync(file);
+    jks.toPem(jksBuffer, pass);
+}
