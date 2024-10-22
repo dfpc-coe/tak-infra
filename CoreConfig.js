@@ -175,7 +175,7 @@ const config = {
             tls: {
                 _attributes: {
                     keystore: 'JKS',
-                    keystoreFile: '/opt/tak/certs/files/truststore-root.jks',
+                    keystoreFile: '/opt/tak/certs/files/takserver.jks',
                     keystorePass: 'atakatak',
                     truststore: 'JKS',
                     truststoreFile: '/opt/tak/certs/files/truststore-intermediate-ca.jks',

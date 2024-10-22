@@ -337,8 +337,8 @@ export default {
             Type: 'AWS::ECS::TaskDefinition',
             Properties: {
                 Family: cf.stackName,
-                Cpu: 1024,
-                Memory: 4096 * 2,
+                Cpu: 1024 * 4,
+                Memory: 4096 * 4,
                 NetworkMode: 'awsvpc',
                 RequiresCompatibilities: ['FARGATE'],
                 Tags: [{
@@ -421,6 +421,7 @@ export default {
                 ServiceName: cf.join('-', [cf.stackName, 'Service']),
                 Cluster: cf.join(['coe-ecs-', cf.ref('Environment')]),
                 TaskDefinition: cf.ref('TaskDefinition'),
+                HealthCheckGracePeriodSeconds: 300,
                 LaunchType: 'FARGATE',
                 PropagateTags: 'SERVICE',
                 EnableExecuteCommand: cf.ref('EnableExecute'),
