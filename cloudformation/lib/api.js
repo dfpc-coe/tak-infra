@@ -2,6 +2,12 @@ import cf from '@openaddresses/cloudfriend';
 
 export default {
     Parameters: {
+        EnableExecute: {
+            Description: 'Allow SSH into docker container - should only be enabled for limited debugging',
+            Type: 'String',
+            AllowedValues: [ 'true', 'false' ],
+            Default: 'false'
+        },
         CertificateState: {
             Description: '2 Letter State Code',
             Type: 'String',
@@ -271,7 +277,6 @@ export default {
                                 'ssmmessages:OpenDataChannel'
                             ],
                             Resource: '*'
-                            // Resource: cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':cluster/coe-ecs-', cf.ref('Environment')])
                         },{
                             Effect: 'Allow',
                             Action: [
@@ -418,7 +423,7 @@ export default {
                 TaskDefinition: cf.ref('TaskDefinition'),
                 LaunchType: 'FARGATE',
                 PropagateTags: 'SERVICE',
-                EnableExecuteCommand: true,
+                EnableExecuteCommand: cf.ref('EnableExecute'),
                 DesiredCount: 1,
                 NetworkConfiguration: {
                     AwsvpcConfiguration: {
