@@ -41,7 +41,7 @@ const config = {
                     port: '8443',
                     _name: 'https',
                     keystore: 'JKS',
-                    keystoreFile: `/opt/tak/certs/files/${process.env.HostedDomain}/letsencrypt.jks`,
+                    keystoreFile: `/opt/tak/certs/${process.env.HostedDomain}/letsencrypt.jks`,
                     keystorePass: 'atakatak'
                 }
             }, {
