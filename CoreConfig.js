@@ -236,7 +236,7 @@ if (config.Configuration.security) {
     if (config.Configuration.security.missionTls) {
         validateKeystore(
             config.Configuration.security.missionTls._attributes.keystoreFile,
-            config.Configuration.security.missionTls._attributes.keystorePastw
+            config.Configuration.security.missionTls._attributes.keystorePass
         );
     }
 }
