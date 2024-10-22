@@ -11,9 +11,9 @@ set -euo pipefail
 # Copy EFS Persisted certs to Let's Encrypt Dir
 if [ -d "/opt/tak/certs/${HostedDomain}" ]; then
     mkdir -p "/etc/letsencrypt/live/${HostedDomain}"
-    ls /opt/tak/certs/
-    ls /opt/tak/certs/${HostedDomain}/
-    cp "/opt/tak/certs/${HostedDomain}/"* "/etc/letsencrypt/live/${HostedDomain}"
+    ls "/opt/tak/certs/"
+    ls "/opt/tak/certs/${HostedDomain}/"
+    cp "/opt/tak/certs/${HostedDomain}/"* "/etc/letsencrypt/live/${HostedDomain}/"
 fi;
 
 # If no LetsEncrypt certs are present - generate a set
@@ -59,22 +59,22 @@ if [ ! -f "/opt/tak/certs/${HostedDomain}/letsencrypt.jks" ]; then
 fi
 
 if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
-    cd /opt/tak/certs/
+    CA_NAME="${StackName:-TAKServer}" ./certs/makeRootCa.sh
 
-    CA_NAME="takserver-root" ./makeRootCa.sh
+    ./certs/makeCert.sh ca intermediate-ca
+    yes | ./certs/makeCert.sh server takserver
+    yes | ./certs/makeCert.sh client admin
 
-    ./makeCert.sh ca intermediate-ca
-    yes | ./makeCert.sh server takserver
-    yes | ./makeCert.sh client admin
-
-    cd $PWD
+    cp ./certs/files/* /opt/tak/certs/files/
 fi
 
 node --version
 node CoreConfig.js
+
+./validateConfig.sh ./CoreConfig.xml
+
 mv ./CoreConfig.xml /opt/tak/CoreConfig.xml
 
-java -jar /opt/tak/db-utils/SchemaManager.jar upgrade
+java -jar ./db-utils/SchemaManager.jar upgrade
 
-/opt/tak/configureInDocker.sh init
-
+./configureInDocker.sh init

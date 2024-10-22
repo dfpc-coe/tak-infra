@@ -1,7 +1,8 @@
 import fs from 'node:fs';
+import jks from 'jks-js';
 import xmljs from 'xml-js';
 
-for (const env of ['HostedDomain', 'PostgresUsername', 'PostgresPassword', 'PostgresURL']) {
+for (const env of ['HostedDomain', 'PostgresUsername', 'PostgresPassword', 'PostgresURL', 'TAK_VERSION']) {
     if (!process.env[env]) {
         console.error(`${env} Environment Variable not set`);
         process.exit(1);
@@ -9,9 +10,8 @@ for (const env of ['HostedDomain', 'PostgresUsername', 'PostgresPassword', 'Post
 }
 
 const Certificate = {
-    CA: 'TAKServer',
-    O: 'COTAK',
-    OU: 'COTAK-Staging'
+    O: process.env.ORGANIZATION || 'COTAK',
+    OU: process.env.ORGANIZATIONAL_UNIT || 'COTAK-Staging'
 };
 
 const config = {
@@ -22,10 +22,10 @@ const config = {
         network: {
             _attributes: {
                 multicastTTL: '5',
-                serverId: 'b67d1db9c8fa45738a547c491071d746',
-                version: '5.2-RELEASE-16-HEAD',
+                // TODO serverId: 'b67d1db9c8fa45738a547c491071d746',
+                version: process.env.TAK_VERSION,
                 cloudwatchEnable: 'true',
-                cloudwatchName: 'cotak-staging'
+                cloudwatchName: process.env.StackName
             },
             input: {
                 _attributes: {
@@ -41,7 +41,7 @@ const config = {
                     port: '8443',
                     _name: 'https',
                     keystore: 'JKS',
-                    keystoreFile: `/opt/tak/certs/files/${process.env.HostedDomain}/letsencrypt.jks`,
+                    keystoreFile: `/opt/tak/certs/${process.env.HostedDomain}/letsencrypt.jks`,
                     keystorePass: 'atakatak'
                 }
             }, {
@@ -59,7 +59,7 @@ const config = {
                 _attributes: {}
             }
         },
-        // TODO: auth: {}
+        auth: {},
         submission: {
             _attributes: {
                 ignoreStaleMessages: 'false',
@@ -74,8 +74,9 @@ const config = {
         repository: {
             _attributes: {
                 enable: 'true',
-                periodMillis: '3000',
-                staleDelayMillis: '15000'
+                numDbConnections: '16',
+                primaryKeyBatchSize: '500',
+                insertionBatchSize: '500'
             },
             connection: {
                 _attributes: {
@@ -117,13 +118,20 @@ const config = {
                 }
             }]
         },
-        // TODO: filter: {},
+        filter: {
+            _attributes: {}
+        },
         buffer: {
             _attributes: {},
             queue: {
                 _attributes: {},
                 priority: {
                     _attributes: {}
+                }
+            },
+            latestSA: {
+                _attributes: {
+                    enable: 'true'
                 }
             }
         },
@@ -134,21 +142,32 @@ const config = {
         },
         certificateSigning: {
             _attributes: {
-                CA: Certificate.CA
+                CA: 'TAKServer'
             },
             certificateConfig: {
                 nameEntries: {
                     nameEntry: [{
                         _attributes: {
                             name: 'O',
-                            valie: Certificate.O
+                            value: Certificate.O
                         }
                     },{
                         _attributes: {
                             name: 'OU',
-                            valie: Certificate.OU
+                            value: Certificate.OU
                         }
                     }]
+                }
+            },
+            TAKServerCAConfig: {
+                _attributes: {
+                    keystore: 'JKS',
+                    keystoreFile: '/opt/tak/certs/files/intermediate-ca-signing.jks',
+                    keystorePass: 'atakatak',
+                    validityDays: '365',
+                    signatureAlg: 'SHA256WithRSA',
+                    CAkey: '/opt/tak/certs/files/intermediate-ca-signing',
+                    CAcertificate: '/opt/tak/certs/files/intermediate-ca-signing'
                 }
             }
         },
@@ -173,12 +192,54 @@ const config = {
                 }
             }
         },
-        federation: {},
+        locate: {
+            _attributes: {
+                enabled: 'true',
+                requireLogin: 'false',
+                group: 'DEMO - Demonstrations',
+                mission: 'cotak-locator'
+            }
+        },
         plugins: {},
         cluster: {},
         vbm: {}
     }
 };
+
+if (config.Configuration.network.connector) {
+    if (!config.Configuration.network.connector) {
+        config.Configuration.network.connector = [config.Configuration.network.connector];
+    }
+
+    for (const connector of config.Configuration.network.connector) {
+        validateKeystore(connector._attributes.keystoreFile, connector._attributes.keystorePass);
+    }
+} else {
+    console.warn('No Network Connectors Found');
+}
+
+if (config.Configuration.certificateSigning.TAKServerCAConfig) {
+    validateKeystore(
+        config.Configuration.certificateSigning.TAKServerCAConfig._attributes.keystoreFile,
+        config.Configuration.certificateSigning.TAKServerCAConfig._attributes.keystorePass
+    );
+}
+
+if (config.Configuration.security) {
+    if (config.Configuration.security.tls) {
+        validateKeystore(
+            config.Configuration.security.tls._attributes.keystoreFile,
+            config.Configuration.security.tls._attributes.keystorePass
+        );
+    }
+
+    if (config.Configuration.security.missionTls) {
+        validateKeystore(
+            config.Configuration.security.missionTls._attributes.keystoreFile,
+            config.Configuration.security.missionTls._attributes.keystorePastw
+        );
+    }
+}
 
 const xml = xmljs.js2xml(config, {
     spaces: 4,
@@ -189,3 +250,9 @@ fs.writeFileSync(
     './CoreConfig.xml',
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n${xml}`
 );
+
+function validateKeystore(file, pass) {
+    fs.accessSync(file);
+    const jksBuffer = fs.readFileSync(file);
+    jks.toPem(jksBuffer, pass);
+}
