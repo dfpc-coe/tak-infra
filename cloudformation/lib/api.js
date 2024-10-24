@@ -178,7 +178,7 @@ export default {
 
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
-                HealthCheckPort: 443,
+                HealthCheckPort: 80,
                 HealthCheckProtocol: 'TCP',
                 HealthCheckTimeoutSeconds: 10,
                 HealthyThresholdCount: 5
@@ -195,7 +195,7 @@ export default {
 
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
-                HealthCheckPort: 443,
+                HealthCheckPort: 8443,
                 HealthCheckProtocol: 'TCP',
                 HealthCheckTimeoutSeconds: 10,
                 HealthyThresholdCount: 5
@@ -212,7 +212,7 @@ export default {
 
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
-                HealthCheckPort: 443,
+                HealthCheckPort: 8444,
                 HealthCheckProtocol: 'TCP',
                 HealthCheckTimeoutSeconds: 10,
                 HealthyThresholdCount: 5
@@ -229,7 +229,7 @@ export default {
 
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
-                HealthCheckPort: 443,
+                HealthCheckPort: 8446,
                 HealthCheckProtocol: 'TCP',
                 HealthCheckTimeoutSeconds: 10,
                 HealthyThresholdCount: 5
@@ -246,7 +246,7 @@ export default {
 
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
-                HealthCheckPort: 443,
+                HealthCheckPort: 8089,
                 HealthCheckProtocol: 'TCP',
                 HealthCheckTimeoutSeconds: 10,
                 HealthyThresholdCount: 5
