@@ -79,11 +79,6 @@ export default {
                 SecurityGroupIngress: [{
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
-                    FromPort: 80,
-                    ToPort: 80
-                },{
-                    CidrIp: '0.0.0.0/0',
-                    IpProtocol: 'tcp',
                     FromPort: 443,
                     ToPort: 443
                 },{
@@ -308,11 +303,7 @@ export default {
                         SourceVolume: cf.stackName
                     }],
                     PortMappings: [{
-                        ContainerPort: 80
-                    },{
                         ContainerPort: 8443
-                    },{
-                        ContainerPort: 8444
                     },{
                         ContainerPort: 8446
                     },{
@@ -395,10 +386,6 @@ export default {
                     TargetGroupArn: cf.ref('TargetGroup8443')
                 },{
                     ContainerName: 'api',
-                    ContainerPort: 8444,
-                    TargetGroupArn: cf.ref('TargetGroup8444')
-                },{
-                    ContainerName: 'api',
                     ContainerPort: 8446,
                     TargetGroupArn: cf.ref('TargetGroup8446')
                 },{
@@ -420,18 +407,8 @@ export default {
                 SecurityGroupIngress: [{
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
-                    FromPort: 80,
-                    ToPort: 80
-                },{
-                    CidrIp: '0.0.0.0/0',
-                    IpProtocol: 'tcp',
                     FromPort: 8443,
                     ToPort: 8443
-                },{
-                    CidrIp: '0.0.0.0/0',
-                    IpProtocol: 'tcp',
-                    FromPort: 8444,
-                    ToPort: 8444
                 },{
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
