@@ -1,8 +1,19 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import jks from 'jks-js';
 import xmljs from 'xml-js';
 
-for (const env of ['HostedDomain', 'PostgresUsername', 'PostgresPassword', 'PostgresURL', 'TAK_VERSION']) {
+const homedir = path.parse(new URL(import.meta.url).pathname).dir;
+
+for (const env of [
+    'HostedDomain',
+    'PostgresUsername',
+    'PostgresPassword',
+    'PostgresURL',
+    'TAK_VERSION',
+    'LDAP_DN',
+    'LDAP_SECURE_URL'
+]) {
     if (!process.env[env]) {
         console.error(`${env} Environment Variable not set`);
         process.exit(1);
@@ -59,7 +70,44 @@ const config = {
                 _attributes: {}
             }
         },
-        auth: {},
+        auth: {
+            _attributes: {
+                default: 'ldap',
+                x509groups: 'true',
+                x509addAnonymous: 'false',
+                x509useGroupCache: 'true',
+                x509useGroupCacheDefaultActive: 'true',
+                x509checkRevocation: 'true'
+            },
+            ldap: {
+                _attributes: {
+                    url: process.env.LDAP_SECURE_URL,
+                    userstring: `uid={username},ou=People,${process.env.LDAP_DN}`,
+                    updateinterval: '60',
+                    groupprefix: '',
+                    groupNameExtractorRegex: 'CN=(.*?)(?:,|$)',
+                    style: 'DS',
+                    serviceAccountDN: `uid=ldapsvcaccount,${process.env.LDAP_DN}`,
+                    serviceAccountCredential: '',
+                    groupObjectClass: 'groupOfNames',
+                    groupBaseRDN: `ou=Group,${process.env.LDAP_DN}`,
+                    ldapsTruststore: 'JKS',
+                    ldapsTruststoreFile: `${homedir}/aws-acm-root.jks`,
+                    ldapsTruststorePass: 'INTENTIONALLY_NOT_SENSITIVE',
+                    enableConnectionPool: 'false'
+                }
+            },
+            File: {
+                _attributes: {
+                    location: 'UserAuthenticationFile.xml'
+                }
+            },
+            oauth: {
+                _attributes: {
+                    oauthUseGroupCache: 'true'
+                }
+            }
+        },
         submission: {
             _attributes: {
                 ignoreStaleMessages: 'false',
@@ -222,6 +270,13 @@ if (config.Configuration.certificateSigning.TAKServerCAConfig) {
     validateKeystore(
         config.Configuration.certificateSigning.TAKServerCAConfig._attributes.keystoreFile,
         config.Configuration.certificateSigning.TAKServerCAConfig._attributes.keystorePass
+    );
+}
+
+if (config.Configuration.auth.ldap) {
+    validateKeystore(
+        config.Configuration.auth.ldap.ldapsTruststoreFile,
+        config.Configuration.auth.ldap.ldapsTruststorePass
     );
 }
 

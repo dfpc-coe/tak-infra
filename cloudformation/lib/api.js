@@ -5,7 +5,7 @@ export default {
         EnableExecute: {
             Description: 'Allow SSH into docker container - should only be enabled for limited debugging',
             Type: 'String',
-            AllowedValues: [ 'true', 'false' ],
+            AllowedValues: ['true', 'false'],
             Default: 'false'
         },
         CertificateState: {
@@ -35,6 +35,16 @@ export default {
         HostedEmail: {
             Description: 'Hosted Email',
             Type: 'String'
+        },
+        LDAP_DN: {
+            Description: 'LDAP DN Attribute',
+            Type: 'String',
+            Default: 'dc=example,dc=com'
+        },
+        LDAP_SECURE_URL: {
+            Description: 'LDAP Secure Connection URL',
+            Type: 'String',
+            Default: 'ldaps://example.com:636'
         }
     },
     Resources: {
@@ -84,27 +94,10 @@ export default {
                 },{
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
-                    FromPort: 8444,
-                    ToPort: 8444
-                },{
-                    CidrIp: '0.0.0.0/0',
-                    IpProtocol: 'tcp',
                     FromPort: 8446,
                     ToPort: 8446
                 }],
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
-            }
-        },
-        Listener80: {
-            Type: 'AWS::ElasticLoadBalancingV2::Listener',
-            Properties: {
-                DefaultActions: [{
-                    Type: 'forward',
-                    TargetGroupArn: cf.ref('TargetGroup80')
-                }],
-                LoadBalancerArn: cf.ref('ELB'),
-                Port: 80,
-                Protocol: 'TCP'
             }
         },
         Listener443: {
@@ -128,18 +121,6 @@ export default {
                 }],
                 LoadBalancerArn: cf.ref('ELB'),
                 Port: 8443,
-                Protocol: 'TCP'
-            }
-        },
-        Listener8444: {
-            Type: 'AWS::ElasticLoadBalancingV2::Listener',
-            Properties: {
-                DefaultActions: [{
-                    Type: 'forward',
-                    TargetGroupArn: cf.ref('TargetGroup8444')
-                }],
-                LoadBalancerArn: cf.ref('ELB'),
-                Port: 8444,
                 Protocol: 'TCP'
             }
         },
@@ -167,23 +148,6 @@ export default {
                 Protocol: 'TCP'
             }
         },
-        TargetGroup80: {
-            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
-            DependsOn: 'ELB',
-            Properties: {
-                Port: 80,
-                Protocol: 'TCP',
-                TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
-
-                HealthCheckEnabled: true,
-                HealthCheckIntervalSeconds: 30,
-                HealthCheckPort: 80,
-                HealthCheckProtocol: 'TCP',
-                HealthCheckTimeoutSeconds: 10,
-                HealthyThresholdCount: 5
-            }
-        },
         TargetGroup8443: {
             Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
             DependsOn: 'ELB',
@@ -196,23 +160,6 @@ export default {
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
                 HealthCheckPort: 8443,
-                HealthCheckProtocol: 'TCP',
-                HealthCheckTimeoutSeconds: 10,
-                HealthyThresholdCount: 5
-            }
-        },
-        TargetGroup8444: {
-            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
-            DependsOn: 'ELB',
-            Properties: {
-                Port: 8444,
-                Protocol: 'TCP',
-                TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
-
-                HealthCheckEnabled: true,
-                HealthCheckIntervalSeconds: 30,
-                HealthCheckPort: 8444,
                 HealthCheckProtocol: 'TCP',
                 HealthCheckTimeoutSeconds: 10,
                 HealthyThresholdCount: 5
@@ -372,6 +319,12 @@ export default {
                         ContainerPort: 8089
                     }],
                     Environment: [{
+                        Name: 'LDAP_SECURE_URL',
+                        Value: cf.ref('LDAP_SECURE_URL')
+                    },{
+                        Name: 'LDAP_DN',
+                        Value: cf.ref('LDAP_DN')
+                    },{
                         Name: 'StackName',
                         Value: cf.stackName
                     },{
@@ -437,10 +390,6 @@ export default {
                     }
                 },
                 LoadBalancers: [{
-                    ContainerName: 'api',
-                    ContainerPort: 80,
-                    TargetGroupArn: cf.ref('TargetGroup80')
-                },{
                     ContainerName: 'api',
                     ContainerPort: 8443,
                     TargetGroupArn: cf.ref('TargetGroup8443')
