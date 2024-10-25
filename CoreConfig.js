@@ -11,7 +11,7 @@ for (const env of [
     'PostgresPassword',
     'PostgresURL',
     'TAK_VERSION',
-    'LDAP_DN',
+    'LDAP_Domain',
     'LDAP_SECURE_URL'
 ]) {
     if (!process.env[env]) {
@@ -19,6 +19,10 @@ for (const env of [
         process.exit(1);
     }
 }
+
+const LDAP_DN = process.env.LDAP_Domain.split('.').map((part) => {
+    return `dc=${part}`;
+}).join(',');
 
 const Certificate = {
     O: process.env.ORGANIZATION || 'COTAK',
@@ -82,15 +86,15 @@ const config = {
             ldap: {
                 _attributes: {
                     url: process.env.LDAP_SECURE_URL,
-                    userstring: `uid={username},ou=People,${process.env.LDAP_DN}`,
+                    userstring: `uid={username},ou=People,${LDAP_DN}`,
                     updateinterval: '60',
                     groupprefix: '',
                     groupNameExtractorRegex: 'CN=(.*?)(?:,|$)',
                     style: 'DS',
-                    serviceAccountDN: `uid=ldapsvcaccount,${process.env.LDAP_DN}`,
+                    serviceAccountDN: `uid=ldapsvcaccount,${LDAP_DN}`,
                     serviceAccountCredential: '',
                     groupObjectClass: 'groupOfNames',
-                    groupBaseRDN: `ou=Group,${process.env.LDAP_DN}`,
+                    groupBaseRDN: `ou=Group,${LDAP_DN}`,
                     ldapsTruststore: 'JKS',
                     ldapsTruststoreFile: `${homedir}/aws-acm-root.jks`,
                     ldapsTruststorePass: 'INTENTIONALLY_NOT_SENSITIVE',

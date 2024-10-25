@@ -36,10 +36,10 @@ export default {
             Description: 'Hosted Email',
             Type: 'String'
         },
-        LDAP_DN: {
-            Description: 'LDAP DN Attribute',
+        LDAP_Domain: {
+            Description: 'LDAPDomain',
             Type: 'String',
-            Default: 'dc=example,dc=com'
+            Default: 'example.com'
         },
         LDAP_SECURE_URL: {
             Description: 'LDAP Secure Connection URL',
@@ -313,8 +313,8 @@ export default {
                         Name: 'LDAP_SECURE_URL',
                         Value: cf.ref('LDAP_SECURE_URL')
                     },{
-                        Name: 'LDAP_DN',
-                        Value: cf.ref('LDAP_DN')
+                        Name: 'LDAP_Domain',
+                        Value: cf.ref('LDAP_Domain')
                     },{
                         Name: 'StackName',
                         Value: cf.stackName
