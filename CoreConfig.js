@@ -279,8 +279,8 @@ if (config.Configuration.certificateSigning.TAKServerCAConfig) {
 
 if (config.Configuration.auth.ldap) {
     validateKeystore(
-        config.Configuration.auth.ldap.ldapsTruststoreFile,
-        config.Configuration.auth.ldap.ldapsTruststorePass
+        config.Configuration.auth.ldap._attributes.ldapsTruststoreFile,
+        config.Configuration.auth.ldap._attributes.ldapsTruststorePass
     );
 }
 

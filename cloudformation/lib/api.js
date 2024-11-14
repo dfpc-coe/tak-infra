@@ -36,12 +36,12 @@ export default {
             Description: 'Hosted Email',
             Type: 'String'
         },
-        LDAP_Domain: {
+        LDAPDomain: {
             Description: 'LDAPDomain',
             Type: 'String',
             Default: 'example.com'
         },
-        LDAP_SECURE_URL: {
+        LDAPSecureUrl: {
             Description: 'LDAP Secure Connection URL',
             Type: 'String',
             Default: 'ldaps://example.com:636'
@@ -310,11 +310,11 @@ export default {
                         ContainerPort: 8089
                     }],
                     Environment: [{
-                        Name: 'LDAP_SECURE_URL',
-                        Value: cf.ref('LDAP_SECURE_URL')
-                    },{
                         Name: 'LDAP_Domain',
-                        Value: cf.ref('LDAP_Domain')
+                        Value: cf.ref('LDAPDomain')
+                    },{
+                        Name: 'LDAP_SECURE_URL',
+                        Value: cf.ref('LDAPSecureUrl')
                     },{
                         Name: 'StackName',
                         Value: cf.stackName

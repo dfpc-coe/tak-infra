@@ -83,7 +83,7 @@ export default {
                 DBInstanceClass: cf.ref('DatabaseType'),
                 VPCSecurityGroups: [cf.ref('DBVPCSecurityGroup')],
                 DBSubnetGroupName: cf.ref('DBSubnet'),
-                PubliclyAccessible: true,
+                PubliclyAccessible: false,
                 DeletionProtection: true
             }
         },
@@ -109,10 +109,9 @@ export default {
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
                 SecurityGroupIngress: [{
                     IpProtocol: '-1',
+                    FromPort: 5432,
+                    ToPort: 5432,
                     SourceSecurityGroupId: cf.getAtt('ServiceSecurityGroup', 'GroupId')
-                },{
-                    IpProtocol: '-1',
-                    CidrIp: '0.0.0.0/0'
                 }]
             }
         }
