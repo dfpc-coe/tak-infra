@@ -10,65 +10,67 @@ set -euo pipefail
 
 # Copy EFS Persisted certs to Let's Encrypt Dir
 if [ -d "/opt/tak/certs/${HostedDomain}" ]; then
-    mkdir -p "/etc/letsencrypt/live/${HostedDomain}"
-    ls "/opt/tak/certs/"
-    ls "/opt/tak/certs/${HostedDomain}/"
-    cp "/opt/tak/certs/${HostedDomain}/"* "/etc/letsencrypt/live/${HostedDomain}/"
-fi;
+  mkdir -p "/etc/letsencrypt/live/${HostedDomain}"
+  ls "/opt/tak/certs/"
+  ls "/opt/tak/certs/${HostedDomain}/"
+  cp "/opt/tak/certs/${HostedDomain}/"* "/etc/letsencrypt/live/${HostedDomain}/"
+fi
 
 # If no LetsEncrypt certs are present - generate a set
 if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
-    echo "No Certificates detected - $(ls /etc/letsencrypt/live/)"
+  echo "No Certificates detected - $(ls /etc/letsencrypt/live/)"
 
-    #TODO Remove Test Cert
-    Command="certbot certonly -v --test-cert --standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos"
+  #TODO Remove Test Cert
+  Command="certbot certonly -v --test-cert --standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos"
 
-    while ! $Command; do
-        echo "Command failed, retrying in 10 seconds..."
-        sleep 10
-    done
+  while ! $Command; do
+    echo "Command failed, retrying in 10 seconds..."
+    sleep 10
+  done
 
-    /opt/tak/certs/cert-metadata.sh
+  /opt/tak/certs/cert-metadata.sh
 
-    mkdir -p "/opt/tak/certs/${HostedDomain}/"
+  mkdir -p "/opt/tak/certs/${HostedDomain}/"
 
-    openssl x509 \
-        -text \
-        -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem" \
-        -noout
+  openssl x509 \
+    -text \
+    -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem" \
+    -noout
 
-    openssl pkcs12 \
-        -export \
-        -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem" \
-        -inkey "/etc/letsencrypt/live/${HostedDomain}/privkey.pem" \
-        -out "/opt/tak/certs/${HostedDomain}/letsencrypt.p12" \
-        -name "${HostedDomain}" \
-        -password "pass:atakatak"
+  openssl pkcs12 \
+    -export \
+    -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem" \
+    -inkey "/etc/letsencrypt/live/${HostedDomain}/privkey.pem" \
+    -out "/opt/tak/certs/${HostedDomain}/letsencrypt.p12" \
+    -name "${HostedDomain}" \
+    -password "pass:atakatak"
 fi
 
 if [ ! -f "/opt/tak/certs/${HostedDomain}/letsencrypt.jks" ]; then
-    cp "/etc/letsencrypt/live/${HostedDomain}/"* "/opt/tak/certs/${HostedDomain}/"
+  cp "/etc/letsencrypt/live/${HostedDomain}/"* "/opt/tak/certs/${HostedDomain}/"
 
-    keytool \
-        -importkeystore \
-        -srcstorepass "atakatak" \
-        -deststorepass "atakatak" \
-        -destkeystore "/opt/tak/certs/${HostedDomain}/letsencrypt.jks" \
-        -srckeystore "/opt/tak/certs/${HostedDomain}/letsencrypt.p12" \
-        -srcstoretype "pkcs12"
+  keytool \
+    -importkeystore \
+    -srcstorepass "atakatak" \
+    -deststorepass "atakatak" \
+    -destkeystore "/opt/tak/certs/${HostedDomain}/letsencrypt.jks" \
+    -srckeystore "/opt/tak/certs/${HostedDomain}/letsencrypt.p12" \
+    -srcstoretype "pkcs12"
 fi
 
 if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
-    CA_NAME="${StackName:-TAKServer}" ./certs/makeRootCa.sh
+  CA_NAME="${StackName:-TAKServer}" ./certs/makeRootCa.sh
 
-    ./certs/makeCert.sh ca intermediate-ca
-    yes | ./certs/makeCert.sh server takserver
-    yes | ./certs/makeCert.sh client admin
+  ./certs/makeCert.sh ca intermediate-ca
+  yes | ./certs/makeCert.sh server takserver
+  yes | ./certs/makeCert.sh client admin
 
-    cp ./certs/files/* /opt/tak/certs/files/
+  cp ./certs/files/* /opt/tak/certs/files/
 fi
 
 node --version
+pwd
+ls -al
 node CoreConfig.js
 
 ./validateConfig.sh ./CoreConfig.xml
