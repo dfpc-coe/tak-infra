@@ -20,6 +20,8 @@ for (const env of [
     }
 }
 
+console.log('HostedDomain:', process.env.HostedDomain);
+
 // const LDAP_DN = process.env.LDAP_Domain.split('.')
 //     .map((part) => {
 //         return `dc=${part}`;
