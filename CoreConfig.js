@@ -1,9 +1,9 @@
 import fs from 'node:fs';
-import path from 'node:path';
+// import path from 'node:path';
 import jks from 'jks-js';
 import xmljs from 'xml-js';
 
-const homedir = path.parse(new URL(import.meta.url).pathname).dir;
+// const homedir = path.parse(new URL(import.meta.url).pathname).dir;
 
 for (const env of [
     'HostedDomain',
@@ -20,11 +20,11 @@ for (const env of [
     }
 }
 
-const LDAP_DN = process.env.LDAP_Domain.split('.')
-    .map((part) => {
-        return `dc=${part}`;
-    })
-    .join(',');
+// const LDAP_DN = process.env.LDAP_Domain.split('.')
+//     .map((part) => {
+//         return `dc=${part}`;
+//     })
+//     .join(',');
 
 const Certificate = {
     O: process.env.ORGANIZATION || 'COTAK',
