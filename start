@@ -69,8 +69,6 @@ if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
 fi
 
 node --version
-pwd
-ls -al
 node CoreConfig.js
 
 ./validateConfig.sh ./CoreConfig.xml

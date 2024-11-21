@@ -299,12 +299,12 @@ if (config.Configuration.certificateSigning.TAKServerCAConfig) {
     );
 }
 
-if (config.Configuration.auth.ldap) {
-    validateKeystore(
-        config.Configuration.auth.ldap._attributes.ldapsTruststoreFile,
-        config.Configuration.auth.ldap._attributes.ldapsTruststorePass
-    );
-}
+// if (config.Configuration.auth.ldap) {
+//     validateKeystore(
+//         config.Configuration.auth.ldap._attributes.ldapsTruststoreFile,
+//         config.Configuration.auth.ldap._attributes.ldapsTruststorePass
+//     );
+// }
 
 if (config.Configuration.security) {
     if (config.Configuration.security.tls) {
