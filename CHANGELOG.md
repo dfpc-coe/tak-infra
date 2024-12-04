@@ -12,6 +12,10 @@
 
 ### Pending Release
 
+### v1.1.0
+
+- :bug: Lock Service Traffic to ELB
+
 ### v1.0.1
 
 - :rocket: Removed unused cloud deps
