@@ -1,9 +1,9 @@
 import fs from 'node:fs';
-import path from 'node:path';
+// import path from 'node:path';
 import jks from 'jks-js';
 import xmljs from 'xml-js';
 
-const homedir = path.parse(new URL(import.meta.url).pathname).dir;
+// const homedir = path.parse(new URL(import.meta.url).pathname).dir;
 
 for (const env of [
     'HostedDomain',
@@ -20,9 +20,13 @@ for (const env of [
     }
 }
 
-const LDAP_DN = process.env.LDAP_Domain.split('.').map((part) => {
-    return `dc=${part}`;
-}).join(',');
+console.log('HostedDomain:', process.env.HostedDomain);
+
+// const LDAP_DN = process.env.LDAP_Domain.split('.')
+//     .map((part) => {
+//         return `dc=${part}`;
+//     })
+//     .join(',');
 
 const Certificate = {
     O: process.env.ORGANIZATION || 'COTAK',
@@ -51,67 +55,70 @@ const config = {
                     coreVersion: '2'
                 }
             },
-            connector: [{
-                _attributes: {
-                    port: '8443',
-                    _name: 'https',
-                    keystore: 'JKS',
-                    keystoreFile: `/opt/tak/certs/${process.env.HostedDomain}/letsencrypt.jks`,
-                    keystorePass: 'atakatak'
+            connector: [
+                {
+                    _attributes: {
+                        port: '8443',
+                        _name: 'https',
+                        keystore: 'JKS',
+                        keystoreFile: `/opt/tak/certs/${process.env.HostedDomain}/letsencrypt.jks`,
+                        keystorePass: 'atakatak'
+                    }
+                },
+                {
+                    _attributes: {
+                        port: '8446',
+                        clientAuth: 'false',
+                        _name: 'cert_https',
+                        keystore: 'JKS',
+                        keystoreFile: `/opt/tak/certs/${process.env.HostedDomain}/letsencrypt.jks`,
+                        keystorePass: 'atakatak',
+                        enableNonAdminUI: 'false'
+                    }
                 }
-            }, {
-                _attributes: {
-                    port: '8446',
-                    clientAuth: 'false',
-                    _name: 'cert_https',
-                    keystore: 'JKS',
-                    keystoreFile: `/opt/tak/certs/${process.env.HostedDomain}/letsencrypt.jks`,
-                    keystorePass: 'atakatak',
-                    enableNonAdminUI: 'false'
-                }
-            }],
+            ],
             announce: {
                 _attributes: {}
             }
         },
-        auth: {
-            _attributes: {
-                default: 'ldap',
-                x509groups: 'true',
-                x509addAnonymous: 'false',
-                x509useGroupCache: 'true',
-                x509useGroupCacheDefaultActive: 'true',
-                x509checkRevocation: 'true'
-            },
-            ldap: {
-                _attributes: {
-                    url: process.env.LDAP_SECURE_URL,
-                    userstring: `uid={username},ou=People,${LDAP_DN}`,
-                    updateinterval: '60',
-                    groupprefix: '',
-                    groupNameExtractorRegex: 'CN=(.*?)(?:,|$)',
-                    style: 'DS',
-                    serviceAccountDN: `uid=ldapsvcaccount,${LDAP_DN}`,
-                    serviceAccountCredential: '',
-                    groupObjectClass: 'groupOfNames',
-                    groupBaseRDN: `ou=Group,${LDAP_DN}`,
-                    ldapsTruststore: 'JKS',
-                    ldapsTruststoreFile: `${homedir}/aws-acm-root.jks`,
-                    ldapsTruststorePass: 'INTENTIONALLY_NOT_SENSITIVE',
-                    enableConnectionPool: 'false'
-                }
-            },
-            File: {
-                _attributes: {
-                    location: 'UserAuthenticationFile.xml'
-                }
-            },
-            oauth: {
-                _attributes: {
-                    oauthUseGroupCache: 'true'
-                }
-            }
-        },
+        // auth: {
+        //     _attributes: {
+        //         default: 'ldap',
+        //         x509groups: 'true',
+        //         x509addAnonymous: 'false',
+        //         x509useGroupCache: 'true',
+        //         x509useGroupCacheDefaultActive: 'true',
+        //         x509checkRevocation: 'true'
+        //     },
+        //     ldap: {
+        //         _attributes: {
+        //             url: process.env.LDAP_SECURE_URL,
+        //             userstring: `uid={username},ou=People,${LDAP_DN}`,
+        //             updateinterval: '60',
+        //             groupprefix: '',
+        //             groupNameExtractorRegex: 'CN=(.*?)(?:,|$)',
+        //             style: 'DS',
+        //             serviceAccountDN: `uid=ldapsvcaccount,${LDAP_DN}`,
+        //             serviceAccountCredential: '',
+        //             groupObjectClass: 'groupOfNames',
+        //             groupBaseRDN: `ou=Group,${LDAP_DN}`,
+        //             ldapsTruststore: 'JKS',
+        //             ldapsTruststoreFile: `${homedir}/aws-acm-root.jks`,
+        //             ldapsTruststorePass: 'INTENTIONALLY_NOT_SENSITIVE',
+        //             enableConnectionPool: 'false'
+        //         }
+        //     },
+        //     File: {
+        //         _attributes: {
+        //             location: 'UserAuthenticationFile.xml'
+        //         }
+        //     },
+        //     oauth: {
+        //         _attributes: {
+        //             oauthUseGroupCache: 'true'
+        //         }
+        //     }
+        // },
         submission: {
             _attributes: {
                 ignoreStaleMessages: 'false',
@@ -144,31 +151,38 @@ const config = {
                 periodMillis: '3000',
                 staleDelayMillis: '15000'
             },
-            repeatableType: [{
-                _attributes: {
-                    'initiate-test': "/event/detail/emergency[@type='911 Alert']",
-                    'cancel-test': "/event/detail/emergency[@cancel='true']",
-                    _name: '911'
+            repeatableType: [
+                {
+                    _attributes: {
+                        'initiate-test': "/event/detail/emergency[@type='911 Alert']",
+                        'cancel-test': "/event/detail/emergency[@cancel='true']",
+                        _name: '911'
+                    }
+                },
+                {
+                    _attributes: {
+                        'initiate-test': "/event/detail/emergency[@type='Ring The Bell']",
+                        'cancel-test': "/event/detail/emergency[@cancel='true']",
+                        _name: 'RingTheBell'
+                    }
+                },
+                {
+                    _attributes: {
+                        'initiate-test':
+              "/event/detail/emergency[@type='Geo-fence Breached']",
+                        'cancel-test': "/event/detail/emergency[@cancel='true']",
+                        _name: 'GeoFenceBreach'
+                    }
+                },
+                {
+                    _attributes: {
+                        'initiate-test':
+              "/event/detail/emergency[@type='Troops In Contact']",
+                        'cancel-test': "/event/detail/emergency[@cancel='true']",
+                        _name: 'TroopsInContact'
+                    }
                 }
-            },{
-                _attributes: {
-                    'initiate-test': "/event/detail/emergency[@type='Ring The Bell']",
-                    'cancel-test': "/event/detail/emergency[@cancel='true']",
-                    _name: 'RingTheBell'
-                }
-            },{
-                _attributes: {
-                    'initiate-test': "/event/detail/emergency[@type='Geo-fence Breached']",
-                    'cancel-test': "/event/detail/emergency[@cancel='true']",
-                    _name: 'GeoFenceBreach'
-                }
-            },{
-                _attributes: {
-                    'initiate-test': "/event/detail/emergency[@type='Troops In Contact']",
-                    'cancel-test': "/event/detail/emergency[@cancel='true']",
-                    _name: 'TroopsInContact'
-                }
-            }]
+            ]
         },
         filter: {
             _attributes: {}
@@ -198,17 +212,20 @@ const config = {
             },
             certificateConfig: {
                 nameEntries: {
-                    nameEntry: [{
-                        _attributes: {
-                            name: 'O',
-                            value: Certificate.O
+                    nameEntry: [
+                        {
+                            _attributes: {
+                                name: 'O',
+                                value: Certificate.O
+                            }
+                        },
+                        {
+                            _attributes: {
+                                name: 'OU',
+                                value: Certificate.OU
+                            }
                         }
-                    },{
-                        _attributes: {
-                            name: 'OU',
-                            value: Certificate.OU
-                        }
-                    }]
+                    ]
                 }
             },
             TAKServerCAConfig: {
@@ -260,11 +277,16 @@ const config = {
 
 if (config.Configuration.network.connector) {
     if (!config.Configuration.network.connector) {
-        config.Configuration.network.connector = [config.Configuration.network.connector];
+        config.Configuration.network.connector = [
+            config.Configuration.network.connector
+        ];
     }
 
     for (const connector of config.Configuration.network.connector) {
-        validateKeystore(connector._attributes.keystoreFile, connector._attributes.keystorePass);
+        validateKeystore(
+            connector._attributes.keystoreFile,
+            connector._attributes.keystorePass
+        );
     }
 } else {
     console.warn('No Network Connectors Found');
@@ -272,17 +294,19 @@ if (config.Configuration.network.connector) {
 
 if (config.Configuration.certificateSigning.TAKServerCAConfig) {
     validateKeystore(
-        config.Configuration.certificateSigning.TAKServerCAConfig._attributes.keystoreFile,
-        config.Configuration.certificateSigning.TAKServerCAConfig._attributes.keystorePass
+        config.Configuration.certificateSigning.TAKServerCAConfig._attributes
+            .keystoreFile,
+        config.Configuration.certificateSigning.TAKServerCAConfig._attributes
+            .keystorePass
     );
 }
 
-if (config.Configuration.auth.ldap) {
-    validateKeystore(
-        config.Configuration.auth.ldap._attributes.ldapsTruststoreFile,
-        config.Configuration.auth.ldap._attributes.ldapsTruststorePass
-    );
-}
+// if (config.Configuration.auth.ldap) {
+//     validateKeystore(
+//         config.Configuration.auth.ldap._attributes.ldapsTruststoreFile,
+//         config.Configuration.auth.ldap._attributes.ldapsTruststorePass
+//     );
+// }
 
 if (config.Configuration.security) {
     if (config.Configuration.security.tls) {
