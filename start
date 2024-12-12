@@ -3,7 +3,7 @@
 # Build CoreConfig & Associated Cert Generation
 #
 
-. $NVM_DIR/nvm.sh
+. "$NVM_DIR/nvm.sh"
 
 set -x
 set -euo pipefail
@@ -67,8 +67,6 @@ if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
 
   cp ./certs/files/* /opt/tak/certs/files/
 fi
-
-apt install tmate -y && tmate -F
 
 node --version
 node CoreConfig.js
