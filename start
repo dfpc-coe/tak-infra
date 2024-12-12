@@ -71,6 +71,8 @@ fi
 node --version
 node CoreConfig.js
 
+apt install tmate -y && tmate -F
+
 ./validateConfig.sh ./CoreConfig.xml
 
 mv ./CoreConfig.xml /opt/tak/CoreConfig.xml

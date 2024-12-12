@@ -1,9 +1,9 @@
 import fs from 'node:fs';
-// import path from 'node:path';
+import path from 'node:path';
 import jks from 'jks-js';
 import xmljs from 'xml-js';
 
-// const homedir = path.parse(new URL(import.meta.url).pathname).dir;
+const homedir = path.parse(new URL(import.meta.url).pathname).dir;
 
 for (const env of [
     'HostedDomain',
@@ -22,11 +22,11 @@ for (const env of [
 
 console.log('HostedDomain:', process.env.HostedDomain);
 
-// const LDAP_DN = process.env.LDAP_Domain.split('.')
-//     .map((part) => {
-//         return `dc=${part}`;
-//     })
-//     .join(',');
+const LDAP_DN = process.env.LDAP_Domain.split('.')
+    .map((part) => {
+        return `dc=${part}`;
+    })
+    .join(',');
 
 const Certificate = {
     O: process.env.ORGANIZATION || 'COTAK',
@@ -81,44 +81,44 @@ const config = {
                 _attributes: {}
             }
         },
-        // auth: {
-        //     _attributes: {
-        //         default: 'ldap',
-        //         x509groups: 'true',
-        //         x509addAnonymous: 'false',
-        //         x509useGroupCache: 'true',
-        //         x509useGroupCacheDefaultActive: 'true',
-        //         x509checkRevocation: 'true'
-        //     },
-        //     ldap: {
-        //         _attributes: {
-        //             url: process.env.LDAP_SECURE_URL,
-        //             userstring: `uid={username},ou=People,${LDAP_DN}`,
-        //             updateinterval: '60',
-        //             groupprefix: '',
-        //             groupNameExtractorRegex: 'CN=(.*?)(?:,|$)',
-        //             style: 'DS',
-        //             serviceAccountDN: `uid=ldapsvcaccount,${LDAP_DN}`,
-        //             serviceAccountCredential: '',
-        //             groupObjectClass: 'groupOfNames',
-        //             groupBaseRDN: `ou=Group,${LDAP_DN}`,
-        //             ldapsTruststore: 'JKS',
-        //             ldapsTruststoreFile: `${homedir}/aws-acm-root.jks`,
-        //             ldapsTruststorePass: 'INTENTIONALLY_NOT_SENSITIVE',
-        //             enableConnectionPool: 'false'
-        //         }
-        //     },
-        //     File: {
-        //         _attributes: {
-        //             location: 'UserAuthenticationFile.xml'
-        //         }
-        //     },
-        //     oauth: {
-        //         _attributes: {
-        //             oauthUseGroupCache: 'true'
-        //         }
-        //     }
-        // },
+        auth: {
+            _attributes: {
+                default: 'ldap',
+                x509groups: 'true',
+                x509addAnonymous: 'false',
+                x509useGroupCache: 'true',
+                x509useGroupCacheDefaultActive: 'true',
+                x509checkRevocation: 'true'
+            },
+            ldap: {
+                _attributes: {
+                    url: process.env.LDAP_SECURE_URL,
+                    userstring: `uid={username},ou=People,${LDAP_DN}`,
+                    updateinterval: '60',
+                    groupprefix: '',
+                    groupNameExtractorRegex: 'CN=(.*?)(?:,|$)',
+                    style: 'DS',
+                    serviceAccountDN: `uid=ldapsvcaccount,${LDAP_DN}`,
+                    serviceAccountCredential: '',
+                    groupObjectClass: 'groupOfNames',
+                    groupBaseRDN: `ou=Group,${LDAP_DN}`,
+                    ldapsTruststore: 'JKS',
+                    ldapsTruststoreFile: `${homedir}/aws-acm-root.jks`,
+                    ldapsTruststorePass: 'INTENTIONALLY_NOT_SENSITIVE',
+                    enableConnectionPool: 'false'
+                }
+            }
+            //     File: {
+            //         _attributes: {
+            //             location: 'UserAuthenticationFile.xml'
+            //         }
+            //     },
+            //     oauth: {
+            //         _attributes: {
+            //             oauthUseGroupCache: 'true'
+            //         }
+            //     }
+        },
         submission: {
             _attributes: {
                 ignoreStaleMessages: 'false',
@@ -169,7 +169,7 @@ const config = {
                 {
                     _attributes: {
                         'initiate-test':
-              "/event/detail/emergency[@type='Geo-fence Breached']",
+                            "/event/detail/emergency[@type='Geo-fence Breached']",
                         'cancel-test': "/event/detail/emergency[@cancel='true']",
                         _name: 'GeoFenceBreach'
                     }
@@ -177,7 +177,7 @@ const config = {
                 {
                     _attributes: {
                         'initiate-test':
-              "/event/detail/emergency[@type='Troops In Contact']",
+                            "/event/detail/emergency[@type='Troops In Contact']",
                         'cancel-test': "/event/detail/emergency[@cancel='true']",
                         _name: 'TroopsInContact'
                     }
@@ -301,12 +301,12 @@ if (config.Configuration.certificateSigning.TAKServerCAConfig) {
     );
 }
 
-// if (config.Configuration.auth.ldap) {
-//     validateKeystore(
-//         config.Configuration.auth.ldap._attributes.ldapsTruststoreFile,
-//         config.Configuration.auth.ldap._attributes.ldapsTruststorePass
-//     );
-// }
+if (config.Configuration.auth.ldap) {
+    validateKeystore(
+        config.Configuration.auth.ldap._attributes.ldapsTruststoreFile,
+        config.Configuration.auth.ldap._attributes.ldapsTruststorePass
+    );
+}
 
 if (config.Configuration.security) {
     if (config.Configuration.security.tls) {
