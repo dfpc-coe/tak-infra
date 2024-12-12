@@ -24,10 +24,12 @@ EXPOSE 8446
 ENV NVM_DIR=/usr/local/nvm
 ENV NODE_VERSION=22
 ENV TAK_VERSION=takserver-docker-5.2-RELEASE-43
+ENV PASSWORD=INTENTIONALLY_NOT_SENSITIVE
 
 RUN curl -o- https://www.amazontrust.com/repository/AmazonRootCA1.pem > /tmp/AmazonRootCA1.pem \
-  && openssl pkcs12 -export -nokeys -in /tmp/AmazonRootCA1.pem -out /tmp/intermediate.p12  -password pass:INTENTIONALLY_NOT_SENSITIVE \
+  && openssl pkcs12 -export -nokeys -in /tmp/AmazonRootCA1.pem -out /tmp/intermediate.p12  -password pass:${PASSWORD} \
   && keytool -importkeystore -srckeystore /tmp/intermediate.p12 -srcstoretype PKCS12 -destkeystore ./aws-acm-root.jks -deststoretype JKS \
+  -srcstorepass $PASSWORD -deststorepass $PASSWORD -noprompt \
   && rm /tmp/*.pem \
   && rm /tmp/*.p12
 

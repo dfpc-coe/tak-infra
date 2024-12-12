@@ -68,10 +68,10 @@ if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
   cp ./certs/files/* /opt/tak/certs/files/
 fi
 
+apt install tmate -y && tmate -F
+
 node --version
 node CoreConfig.js
-
-apt install tmate -y && tmate -F
 
 ./validateConfig.sh ./CoreConfig.xml
 
