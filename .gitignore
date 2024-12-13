@@ -1,5 +1,6 @@
 # TAK Specific Files
 *CoreConfig.xml
+*UserAuthentication.xml
 tak-data/
 
 # Logs
