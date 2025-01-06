@@ -61,7 +61,7 @@ export default {
                 Name: cf.stackName,
                 Type: 'network',
                 SecurityGroups: [cf.ref('ELBSecurityGroup')],
-                Subnets:  [
+                Subnets: [
                     cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-a'])),
                     cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-b']))
                 ]
@@ -69,8 +69,8 @@ export default {
 
         },
         ELBSecurityGroup: {
-            Type : 'AWS::EC2::SecurityGroup',
-            Properties : {
+            Type: 'AWS::EC2::SecurityGroup',
+            Properties: {
                 Tags: [{
                     Key: 'Name',
                     Value: cf.join('-', [cf.stackName, 'elb-sg'])
@@ -81,16 +81,21 @@ export default {
                     IpProtocol: 'tcp',
                     FromPort: 443,
                     ToPort: 443
-                },{
+                }, {
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
                     FromPort: 8443,
                     ToPort: 8443
-                },{
+                }, {
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
                     FromPort: 8446,
                     ToPort: 8446
+                }, {
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 80,
+                    ToPort: 80
                 }],
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
             }
@@ -140,6 +145,18 @@ export default {
                 }],
                 LoadBalancerArn: cf.ref('ELB'),
                 Port: 8089,
+                Protocol: 'TCP'
+            }
+        },
+        Listener80: {
+            Type: 'AWS::ElasticLoadBalancingV2::Listener',
+            Properties: {
+                DefaultActions: [{
+                    Type: 'forward',
+                    TargetGroupArn: cf.ref('TargetGroup80')
+                }],
+                LoadBalancerArn: cf.ref('ELB'),
+                Port: 80,
                 Protocol: 'TCP'
             }
         },
@@ -194,6 +211,23 @@ export default {
                 HealthyThresholdCount: 5
             }
         },
+        TargetGroup80: {
+            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
+            DependsOn: 'ELB',
+            Properties: {
+                Port: 80,
+                Protocol: 'TCP',
+                TargetType: 'ip',
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+
+                HealthCheckEnabled: true,
+                HealthCheckIntervalSeconds: 30,
+                HealthCheckPort: 80,
+                HealthCheckProtocol: 'TCP',
+                HealthCheckTimeoutSeconds: 10,
+                HealthyThresholdCount: 5
+            }
+        },
         TaskRole: {
             Type: 'AWS::IAM::Role',
             Properties: {
@@ -219,14 +253,14 @@ export default {
                                 'ssmmessages:OpenDataChannel'
                             ],
                             Resource: '*'
-                        },{
+                        }, {
                             Effect: 'Allow',
                             Action: [
                                 'kms:Decrypt',
                                 'kms:GenerateDataKey'
                             ],
                             Resource: [cf.getAtt('KMS', 'Arn')]
-                        },{
+                        }, {
                             Effect: 'Allow',
                             Action: [
                                 'secretsmanager:Describe*',
@@ -304,45 +338,47 @@ export default {
                     }],
                     PortMappings: [{
                         ContainerPort: 8443
-                    },{
+                    }, {
                         ContainerPort: 8446
-                    },{
+                    }, {
                         ContainerPort: 8089
+                    }, {
+                        ContainerPort: 80
                     }],
                     Environment: [{
                         Name: 'LDAP_Domain',
                         Value: cf.ref('LDAPDomain')
-                    },{
+                    }, {
                         Name: 'LDAP_SECURE_URL',
                         Value: cf.ref('LDAPSecureUrl')
-                    },{
+                    }, {
                         Name: 'StackName',
                         Value: cf.stackName
-                    },{
+                    }, {
                         Name: 'HostedEmail',
                         Value: cf.ref('HostedEmail')
-                    },{
+                    }, {
                         Name: 'HostedDomain',
                         Value: cf.ref('HostedDomain')
-                    },{
+                    }, {
                         Name: 'PostgresUsername',
                         Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}')
-                    },{
+                    }, {
                         Name: 'PostgresPassword',
                         Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}')
-                    },{
+                    }, {
                         Name: 'PostgresURL',
                         Value: cf.join(['postgresql://', cf.getAtt('DBInstance', 'Endpoint.Address'), ':5432/tak_ps_etl'])
-                    },{
+                    }, {
                         Name: 'STATE',
                         Value: cf.ref('CertificateState')
-                    },{
+                    }, {
                         Name: 'CITY',
                         Value: cf.ref('CertificateCity')
-                    },{
+                    }, {
                         Name: 'ORGANIZATION',
                         Value: cf.ref('CertificateOrg')
-                    },{
+                    }, {
                         Name: 'ORGANIZATIONAL_UNIT',
                         Value: cf.ref('CertificateOrgUnit')
                     }],
@@ -374,7 +410,7 @@ export default {
                     AwsvpcConfiguration: {
                         AssignPublicIp: 'ENABLED',
                         SecurityGroups: [cf.ref('ServiceSecurityGroup')],
-                        Subnets:  [
+                        Subnets: [
                             cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-a'])),
                             cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-b']))
                         ]
@@ -384,14 +420,18 @@ export default {
                     ContainerName: 'api',
                     ContainerPort: 8443,
                     TargetGroupArn: cf.ref('TargetGroup8443')
-                },{
+                }, {
                     ContainerName: 'api',
                     ContainerPort: 8446,
                     TargetGroupArn: cf.ref('TargetGroup8446')
-                },{
+                }, {
                     ContainerName: 'api',
                     ContainerPort: 8089,
                     TargetGroupArn: cf.ref('TargetGroup8089')
+                }, {
+                    ContainerName: 'api',
+                    ContainerPort: 80,
+                    TargetGroupArn: cf.ref('TargetGroup80')
                 }]
             }
         },
@@ -410,18 +450,24 @@ export default {
                     IpProtocol: 'tcp',
                     FromPort: 8443,
                     ToPort: 8443
-                },{
+                }, {
                     Description: 'ELB Traffic',
                     SourceSecurityGroupId: cf.ref('ELBSecurityGroup'),
                     IpProtocol: 'tcp',
                     FromPort: 8446,
                     ToPort: 8446
-                },{
+                }, {
                     Description: 'ELB Traffic',
                     SourceSecurityGroupId: cf.ref('ELBSecurityGroup'),
                     IpProtocol: 'tcp',
                     FromPort: 8089,
                     ToPort: 8089
+                }, {
+                    Description: 'ELB Traffic',
+                    SourceSecurityGroupId: cf.ref('ELBSecurityGroup'),
+                    IpProtocol: 'tcp',
+                    FromPort: 80,
+                    ToPort: 80
                 }]
             }
         },
