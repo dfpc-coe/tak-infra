@@ -169,7 +169,7 @@ export default {
                 TargetType: 'ip',
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
 
-                HealthCheckEnabled: true,
+                HealthCheckEnabled: false,
                 HealthCheckIntervalSeconds: 30,
                 HealthCheckPort: 8443,
                 HealthCheckProtocol: 'TCP',
