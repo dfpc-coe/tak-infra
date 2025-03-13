@@ -37,7 +37,6 @@ RUN mkdir -p $NVM_DIR \
     && nvm install $NODE_VERSION \
     && nvm alias default $NODE_VERSION \
     && nvm use default \
-    && npm install \
-    && npm install --global http-server
+    && npm install 
 
 ENTRYPOINT ["/bin/bash", "-c", "/opt/tak/start"]
