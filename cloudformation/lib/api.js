@@ -205,14 +205,14 @@ export default {
             Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
             DependsOn: 'ELB',
             Properties: {
-                Port: 8446,
+                Port: 80,
                 Protocol: 'TCP',
                 TargetType: 'ip',
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
 
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
-                HealthCheckPort: 80,
+                HealthCheckPort: 8446,
                 HealthCheckProtocol: 'TCP',
                 HealthCheckTimeoutSeconds: 10,
                 HealthyThresholdCount: 2
