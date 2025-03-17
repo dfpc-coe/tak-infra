@@ -1,9 +1,12 @@
 name: Test
 
 on:
-  config:
+  push
+
+jobs:
+  test:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    if: ${{ github.event.pull_request.draft == false }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
