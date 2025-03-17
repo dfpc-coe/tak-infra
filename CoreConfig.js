@@ -44,7 +44,7 @@ const config = {
             },
             input: {
                 _attributes: {
-                    auth: 'x509',
+                    auth: 'ldap',
                     _name: 'stdssl',
                     protocol: 'tls',
                     port: '8089',
@@ -55,9 +55,10 @@ const config = {
                 _attributes: {
                     port: '8443',
                     _name: 'https',
-                    keystore: 'JKS',
-                    keystoreFile: `/opt/tak/certs/${process.env.HostedDomain}/letsencrypt.jks`,
-                    keystorePass: 'atakatak'
+                    // keystore: 'JKS',
+                    // keystoreFile: `/opt/tak/certs/files/${process.env.HostedDomain}/letsencrypt.jks`,
+                    // keystorePass: 'atakatak',
+                    enableNonAdminUI: 'true'
                 }
             }, {
                 _attributes: {
@@ -65,9 +66,9 @@ const config = {
                     clientAuth: 'false',
                     _name: 'cert_https',
                     keystore: 'JKS',
-                    keystoreFile: `/opt/tak/certs/${process.env.HostedDomain}/letsencrypt.jks`,
+                    keystoreFile: `/opt/tak/certs/files/${process.env.HostedDomain}/letsencrypt.jks`,
                     keystorePass: 'atakatak',
-                    enableNonAdminUI: 'false'
+                    enableNonAdminUI: 'true'
                 }
             }],
             announce: {
@@ -92,23 +93,13 @@ const config = {
                     groupNameExtractorRegex: 'CN=(.*?)(?:,|$)',
                     style: 'DS',
                     serviceAccountDN: `uid=ldapsvcaccount,${LDAP_DN}`,
-                    serviceAccountCredential: '',
+                    serviceAccountCredential: process.env.LDAP_Password,
                     groupObjectClass: 'groupOfNames',
                     groupBaseRDN: `ou=Group,${LDAP_DN}`,
                     ldapsTruststore: 'JKS',
-                    ldapsTruststoreFile: `${homedir}/aws-acm-root.jks`,
+                    ldapsTruststoreFile: '/opt/tak/aws-acm-root.jks',
                     ldapsTruststorePass: 'INTENTIONALLY_NOT_SENSITIVE',
                     enableConnectionPool: 'false'
-                }
-            },
-            File: {
-                _attributes: {
-                    location: 'UserAuthenticationFile.xml'
-                }
-            },
-            oauth: {
-                _attributes: {
-                    oauthUseGroupCache: 'true'
                 }
             }
         },

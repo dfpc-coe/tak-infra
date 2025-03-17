@@ -8,6 +8,11 @@ export default {
             AllowedValues: ['true', 'false'],
             Default: 'false'
         },
+        CertificateCountry: {
+            Description: '2 Letter Country Code',
+            Type: 'String',
+            Default: 'US'
+        },
         CertificateState: {
             Description: '2 Letter State Code',
             Type: 'String',
@@ -36,8 +41,14 @@ export default {
             Description: 'Hosted Email',
             Type: 'String'
         },
+        LetsencryptProdCert: {
+            Description: 'Issue Let\'s Encryp Production Certificate?',
+            Type: 'String',
+            AllowedValues: ['true', 'false'],
+            Default: 'false'
+        },
         LDAPDomain: {
-            Description: 'LDAPDomain',
+            Description: 'LDAP Domain',
             Type: 'String',
             Default: 'example.com'
         },
@@ -53,6 +64,14 @@ export default {
             Properties: {
                 LogGroupName: cf.stackName,
                 RetentionInDays: 7
+            }
+        },
+	TAKAdminP12Secret: {
+            Type: 'AWS::SecretsManager::Secret',
+            Properties: {
+                Description: cf.join([cf.stackName, ' TAK Server Admin key (p12)']),
+                Name: cf.join([cf.stackName, '/tak-admin-cert']),
+                KmsKeyId: cf.ref('KMS')
             }
         },
         ELB: {
@@ -84,6 +103,11 @@ export default {
                 },{
                     CidrIp: '0.0.0.0/0',
                     IpProtocol: 'tcp',
+                    FromPort: 80,
+                    ToPort: 80
+                },{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
                     FromPort: 8443,
                     ToPort: 8443
                 },{
@@ -91,6 +115,11 @@ export default {
                     IpProtocol: 'tcp',
                     FromPort: 8446,
                     ToPort: 8446
+                },{
+                    CidrIp: '0.0.0.0/0',
+                    IpProtocol: 'tcp',
+                    FromPort: 8089,
+                    ToPort: 8089
                 }],
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
             }
@@ -100,10 +129,22 @@ export default {
             Properties: {
                 DefaultActions: [{
                     Type: 'forward',
-                    TargetGroupArn: cf.ref('TargetGroup8443')
+                    TargetGroupArn: cf.ref('TargetGroup8446')
                 }],
                 LoadBalancerArn: cf.ref('ELB'),
                 Port: 443,
+                Protocol: 'TCP'
+            }
+        },
+        Listener80: {
+            Type: 'AWS::ElasticLoadBalancingV2::Listener',
+            Properties: {
+                DefaultActions: [{
+                    Type: 'forward',
+                    TargetGroupArn: cf.ref('TargetGroup80')
+                }],
+                LoadBalancerArn: cf.ref('ELB'),
+                Port: 80,
                 Protocol: 'TCP'
             }
         },
@@ -157,7 +198,24 @@ export default {
                 HealthCheckPort: 8443,
                 HealthCheckProtocol: 'TCP',
                 HealthCheckTimeoutSeconds: 10,
-                HealthyThresholdCount: 5
+                HealthyThresholdCount: 2
+            }
+        },
+        TargetGroup80: {
+            Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
+            DependsOn: 'ELB',
+            Properties: {
+                Port: 80,
+                Protocol: 'TCP',
+                TargetType: 'ip',
+                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+
+                HealthCheckEnabled: true,
+                HealthCheckIntervalSeconds: 30,
+                HealthCheckPort: 8446,
+                HealthCheckProtocol: 'TCP',
+                HealthCheckTimeoutSeconds: 10,
+                HealthyThresholdCount: 2
             }
         },
         TargetGroup8446: {
@@ -174,7 +232,7 @@ export default {
                 HealthCheckPort: 8446,
                 HealthCheckProtocol: 'TCP',
                 HealthCheckTimeoutSeconds: 10,
-                HealthyThresholdCount: 5
+                HealthyThresholdCount: 2
             }
         },
         TargetGroup8089: {
@@ -191,7 +249,7 @@ export default {
                 HealthCheckPort: 8089,
                 HealthCheckProtocol: 'TCP',
                 HealthCheckTimeoutSeconds: 10,
-                HealthyThresholdCount: 5
+                HealthyThresholdCount: 2
             }
         },
         TaskRole: {
@@ -235,6 +293,14 @@ export default {
                             ],
                             Resource: [
                                 cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/*'])
+                            ]
+                        },{
+                            Effect: 'Allow',
+                            Action: [
+                                'secretsmanager:Put*'
+                            ],
+                            Resource: [
+                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/tak-admin-cert'])
                             ]
                         }]
                     }
@@ -299,11 +365,13 @@ export default {
                     Name: 'api',
                     Image: cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/coe-ecr-tak:', cf.ref('GitSha')]),
                     MountPoints: [{
-                        ContainerPath: '/opt/tak',
+                        ContainerPath: '/opt/tak/certs/files',
                         SourceVolume: cf.stackName
                     }],
                     PortMappings: [{
                         ContainerPort: 8443
+                    },{
+                        ContainerPort: 80
                     },{
                         ContainerPort: 8446
                     },{
@@ -325,6 +393,12 @@ export default {
                         Name: 'HostedDomain',
                         Value: cf.ref('HostedDomain')
                     },{
+                        Name: 'LetsencryptProdCert',
+                        Value: cf.ref('LetsencryptProdCert')
+                    },{
+                        Name: 'LDAP_Password',
+                        Value: cf.join(['{{resolve:secretsmanager:coe-auth-', cf.ref('Environment'), '/svc:SecretString:password:AWSCURRENT}}'])
+                    },{
                         Name: 'PostgresUsername',
                         Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}')
                     },{
@@ -333,6 +407,9 @@ export default {
                     },{
                         Name: 'PostgresURL',
                         Value: cf.join(['postgresql://', cf.getAtt('DBInstance', 'Endpoint.Address'), ':5432/tak_ps_etl'])
+                    },{
+                        Name: 'COUNTRY',
+                        Value: cf.ref('CertificateCountry')
                     },{
                         Name: 'STATE',
                         Value: cf.ref('CertificateState')
@@ -386,6 +463,10 @@ export default {
                     TargetGroupArn: cf.ref('TargetGroup8443')
                 },{
                     ContainerName: 'api',
+                    ContainerPort: 80,
+                    TargetGroupArn: cf.ref('TargetGroup80')
+                },{
+                    ContainerName: 'api',
                     ContainerPort: 8446,
                     TargetGroupArn: cf.ref('TargetGroup8446')
                 },{
@@ -410,6 +491,12 @@ export default {
                     IpProtocol: 'tcp',
                     FromPort: 8443,
                     ToPort: 8443
+                },{
+                    Description: 'ELB Traffic',
+                    SourceSecurityGroupId: cf.ref('ELBSecurityGroup'),
+                    IpProtocol: 'tcp',
+                    FromPort: 80,
+                    ToPort: 80
                 },{
                     Description: 'ELB Traffic',
                     SourceSecurityGroupId: cf.ref('ELBSecurityGroup'),

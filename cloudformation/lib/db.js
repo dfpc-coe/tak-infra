@@ -10,6 +10,11 @@ export default {
                 'db.t3.micro',
                 'db.m6g.large'
             ]
+        },
+        DatabaseVersion: {
+            Description: 'PostgreSQL database engine version',
+            Type: 'String',
+            Default: '17.4'
         }
     },
     Resources: {
@@ -67,7 +72,7 @@ export default {
                 MonitoringInterval: 60,
                 MonitoringRoleArn: cf.getAtt('DBMonitoringRole', 'Arn'),
                 KmsKeyId: cf.ref('KMS'),
-                EngineVersion: '16.2',
+                EngineVersion: cf.ref('DatabaseVersion'),
                 StorageEncrypted: true,
                 MasterUsername: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}'),
                 MasterUserPassword: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}'),
