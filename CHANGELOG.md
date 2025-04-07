@@ -12,6 +12,10 @@
 
 ### Pending Release
 
+### v1.3.0
+
+- :rocket: Update TAK Server version to 5.4
+
 ### v1.2.0 (@chriselsen :tada:)
 
 - Bumped up the PostgreSQL version
