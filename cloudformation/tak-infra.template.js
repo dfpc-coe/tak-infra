@@ -4,9 +4,9 @@ import API from './lib/api.js';
 import Alarms from './lib/alarms.js';
 import KMS from './lib/kms.js';
 import EFS from './lib/efs.js';
-//import {
+// import {
 //    RDS as RDSAlarms
-//} from '@openaddresses/batch-alarms';
+// } from '@openaddresses/batch-alarms';
 
 export default cf.merge(
     API, DB, KMS, Alarms, EFS,

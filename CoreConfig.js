@@ -1,9 +1,6 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import jks from 'jks-js';
 import xmljs from 'xml-js';
-
-const homedir = path.parse(new URL(import.meta.url).pathname).dir;
 
 for (const env of [
     'HostedDomain',
