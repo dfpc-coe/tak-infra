@@ -1,6 +1,7 @@
 services:
     api:
         platform: linux/amd64
+        image: takserver
         build: .
         restart: 'always'
         links:
