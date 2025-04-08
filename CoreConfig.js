@@ -252,7 +252,9 @@ if (config.Configuration.network.connector) {
     }
 
     for (const connector of config.Configuration.network.connector) {
-        validateKeystore(connector._attributes.keystoreFile, connector._attributes.keystorePass);
+        if (connector._attributes.keystoreFile && connector._attributes.keystorePass) {
+            validateKeystore(connector._attributes.keystoreFile, connector._attributes.keystorePass);
+        }
     }
 } else {
     console.warn('No Network Connectors Found');
