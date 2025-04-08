@@ -9,6 +9,11 @@ set -euo pipefail
 
 echo "NodeJS Version: $(node --version)"
 
+# Enusre Certs Directory is preset
+if [ -d "/opt/tak/certs/files/" ]; then
+    mkdir -p "/opt/tak/certs/files/"
+fi
+
 # Copy EFS Persisted certs to Let's Encrypt Dir
 if [ -d "/opt/tak/certs/files/${HostedDomain}" ]; then
     mkdir -p "/etc/letsencrypt/live/${HostedDomain}"
