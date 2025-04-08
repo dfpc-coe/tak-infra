@@ -481,7 +481,7 @@ export default {
             Properties: {
                 Tags: [{
                     Key: 'Name',
-                    Value: cf.join('-', [cf.stackName, 'ec2-sg'])
+                    Value: cf.join('-', [cf.stackName, 'ecs-sg'])
                 }],
                 GroupDescription: 'Allow access to TAK ports',
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),

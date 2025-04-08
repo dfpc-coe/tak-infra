@@ -12,6 +12,10 @@
 
 ### Pending Release
 
+### v1.3.1
+
+- :rocket: Rename SG to reference ECS instead of EC2
+
 ### v1.3.0
 
 - :rocket: Update TAK Server version to 5.4
