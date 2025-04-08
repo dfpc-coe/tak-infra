@@ -31,11 +31,13 @@ if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
         else
             echo "ok - Production Cert Requested - Test Cert Current - Regenerating"
             rm -rf "/etc/letsencrypt/live/${HostedDomain}"
+            rm -rf "/opt/tak/certs/files/${HostedDomain}"
         fi
     else
         if [ "${LetsencryptProdCert}" != "true" ]; then
             echo "ok - Test Cert Requested - Prod Cert Current - Regenerating"
             rm -rf "/etc/letsencrypt/live/${HostedDomain}"
+            rm -rf "/opt/tak/certs/files/${HostedDomain}"
         else
             echo "ok - Prod Cert"
         fi
