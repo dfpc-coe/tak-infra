@@ -22,6 +22,8 @@ console.error('ok - building containers');
 await tak();
 
 function login() {
+    console.error('ok - logging in')
+
     return new Promise((resolve, reject) => {
         const $ = CP.exec(`
             aws ecr get-login-password \
