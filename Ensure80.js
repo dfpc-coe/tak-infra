@@ -5,7 +5,7 @@ if (!process.env.HostedDomain) {
     throw new Error('HostedDomain Env Var must be set');
 }
 
-const port = 7000;
+const port = 80;
 const uuid = randomUUID();
 const secret = randomUUID();
 
