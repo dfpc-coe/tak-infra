@@ -5,17 +5,21 @@
 
 . $NVM_DIR/nvm.sh
 
-set -x
 set -euo pipefail
 
-echo "NodeJS Version:"
-node --version
+echo "NodeJS Version: $(node --version)"
 
 # Copy EFS Persisted certs to Let's Encrypt Dir
 if [ -d "/opt/tak/certs/files/${HostedDomain}" ]; then
     mkdir -p "/etc/letsencrypt/live/${HostedDomain}"
+
+    echo "ok - Listing /opt/tak/certs/files/"
     ls "/opt/tak/certs/files/"
+
+    echo "ok - Listing /opt/tak/certs/files/${HostedDomain}/"
     ls "/opt/tak/certs/files/${HostedDomain}/"
+
+    echo "ok - Copying ${HostedDomain} to Let's Encrypt Working Dir"
     cp "/opt/tak/certs/files/${HostedDomain}/"* "/etc/letsencrypt/live/${HostedDomain}/"
 fi;
 
@@ -46,7 +50,7 @@ fi
 
 # If no LetsEncrypt certs are present - generate a set
 if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
-    echo "No Certificates detected - $(ls /etc/letsencrypt/live/)"
+    echo "ok - No Certificates detected, requesting one"
 
     node ./Ensure80.js
 
@@ -54,11 +58,13 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
     if [ "${LetsencryptProdCert}" != "true" ]; then
         CertbotParameter="--test-cert "
     fi
+
     Command="certbot certonly -v ${CertbotParameter}--standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos"
 
     while ! $Command; do
-        echo "Command failed, retrying in 10 seconds..."
+        echo "not ok - Command failed, retrying in 10 seconds..."
         sleep 10
+        node ./Ensure80.js
     done
 
     /opt/tak/certs/cert-metadata.sh
@@ -99,8 +105,8 @@ if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
     { yes || :; } | /opt/tak/certs/makeCert.sh client admin
 
     aws secretsmanager put-secret-value \
-    --secret-id ${StackName}/tak-admin-cert \
-    --secret-binary fileb://files/admin.p12 || true
+        --secret-id ${StackName}/tak-admin-cert \
+        --secret-binary fileb://files/admin.p12 || true
 fi
 
 cd /opt/tak
