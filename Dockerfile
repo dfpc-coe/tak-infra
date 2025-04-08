@@ -26,17 +26,12 @@ RUN wget "http://tak-server-releases.s3-website.us-gov-east-1.amazonaws.com/${TA
     && mv ./${TAK_VERSION}/tak/* ./ \
     && rm -rf "./${TAK_VERSION}"
 
-RUN mkdir -p /opt/tak/certs/files/ \
-    && curl -o- https://www.amazontrust.com/repository/AmazonRootCA1.pem > /tmp/AmazonRootCA1.pem \
-    && yes | keytool -import -file /tmp/AmazonRootCA1.pem -alias AWS -deststoretype JKS -deststorepass INTENTIONALLY_NOT_SENSITIVE -keystore /opt/tak/aws-acm-root.jks \
-    && rm /tmp/*.pem
-
 RUN mkdir -p $NVM_DIR \
     && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash \
     && . $NVM_DIR/nvm.sh \
     && nvm install $NODE_VERSION \
     && nvm alias default $NODE_VERSION \
     && nvm use default \
-    && npm install 
+    && npm install
 
 ENTRYPOINT ["/bin/bash", "-c", "/opt/tak/start"]

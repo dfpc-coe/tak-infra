@@ -1,5 +1,7 @@
 import fs from 'node:fs';
+import fsp from 'node:fs/promises';
 import jks from 'jks-js';
+import $ from 'node:child_process';
 import xmljs from 'xml-js';
 
 for (const env of [
@@ -16,6 +18,14 @@ for (const env of [
         process.exit(1);
     }
 }
+
+const Amazon_Root_Cert = await (await fetch('https://www.amazontrust.com/repository/AmazonRootCA1.pem')).text();
+
+await fsp.writeFile('/tmp/AmazonRootCA1.pem', Amazon_Root_Cert);
+
+$.execSync('yes | keytool -import -file /tmp/AmazonRootCA1.pem -alias AWS -deststoretype JKS -deststorepass INTENTIONALLY_NOT_SENSITIVE -keystore /opt/tak/certs/files/aws-acm-root.jks', {
+    stdio: 'inherit'
+});
 
 const LDAP_DN = process.env.LDAP_Domain.split('.').map((part) => {
     return `dc=${part}`;
@@ -94,7 +104,7 @@ const config = {
                     groupObjectClass: 'groupOfNames',
                     groupBaseRDN: `ou=Group,${LDAP_DN}`,
                     ldapsTruststore: 'JKS',
-                    ldapsTruststoreFile: '/opt/tak/aws-acm-root.jks',
+                    ldapsTruststoreFile: '/opt/tak/certs/files/aws-acm-root.jks',
                     ldapsTruststorePass: 'INTENTIONALLY_NOT_SENSITIVE',
                     enableConnectionPool: 'false'
                 }
