@@ -12,6 +12,10 @@
 
 ### Pending Release
 
+### v1.3.2
+
+- :bug: Check for JKS attributes before validating
+
 ### v1.3.1
 
 - :rocket: Rename SG to reference ECS instead of EC2
