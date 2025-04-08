@@ -12,6 +12,10 @@
 
 ### Pending Release
 
+### v1.4.0
+
+- :rocket: Improvements to Certificate Issuance
+
 ### v1.3.2
 
 - :bug: Check for JKS attributes before validating
