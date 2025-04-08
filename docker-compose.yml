@@ -1,5 +1,5 @@
 services:
-    api:
+    takapi:
         platform: linux/amd64
         image: takserver
         build: .

@@ -46,8 +46,8 @@ function login() {
 function tak() {
     return new Promise((resolve, reject) => {
         const $ = CP.exec(`
-            docker compose build api \
-            && docker tag tak-api:latest "$\{AWS_ACCOUNT_ID\}.dkr.ecr.$\{AWS_REGION\}.amazonaws.com/coe-ecr-tak:$\{GITSHA\}" \
+            docker compose build takapi \
+            && docker tag takserver:latest "$\{AWS_ACCOUNT_ID\}.dkr.ecr.$\{AWS_REGION\}.amazonaws.com/coe-ecr-tak:$\{GITSHA\}" \
             && docker push "$\{AWS_ACCOUNT_ID\}.dkr.ecr.$\{AWS_REGION\}.amazonaws.com/coe-ecr-tak:$\{GITSHA\}"
         `, (err) => {
             if (err) return reject(err);
