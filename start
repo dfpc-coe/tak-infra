@@ -64,7 +64,7 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
         CertbotParameter="--test-cert "
     fi
 
-    Command="certbot certonly -v ${CertbotParameter}--standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos"
+    Command="certbot certonly -v ${CertbotParameter}--standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos --cert-name ${HostedDomain}"
 
     while ! $Command; do
         echo "not ok - Command failed, retrying in 10 seconds..."
