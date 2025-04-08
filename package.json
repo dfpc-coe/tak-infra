@@ -6,10 +6,11 @@
     "description": "CloudFormation managed infrastructure for TAK Server",
     "scripts": {
         "lint": "eslint cloudformation/ CoreConfig.js",
+        "build": "./bin/build.js",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "engines": {
-        "node": ">= 18"
+        "node": ">= 22"
     },
     "repository": {
         "type": "git",
