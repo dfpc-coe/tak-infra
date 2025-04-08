@@ -19,6 +19,29 @@ if [ -d "/opt/tak/certs/files/${HostedDomain}" ]; then
     cp "/opt/tak/certs/files/${HostedDomain}/"* "/etc/letsencrypt/live/${HostedDomain}/"
 fi;
 
+# If LetsEncrypt certs are present - check validity
+if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
+    # Extract the issuer from the certificate
+    ISSUER=$(openssl x509 -noout -issuer -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem")
+
+    # Check if the issuer is from the Let's Encrypt staging environment
+    if echo "$ISSUER" | grep -q "STAGING"; then
+        if [ "${LetsencryptProdCert}" != "true" ]; then
+            echo "ok - Test Cert"
+        else
+            echo "ok - Production Cert Requested - Test Cert Current - Regenerating"
+            rm -rf "/etc/letsencrypt/live/${HostedDomain}"
+        fi
+    else
+        if [ "${LetsencryptProdCert}" != "true" ]; then
+            echo "ok - Test Cert Requested - Prod Cert Current - Regenerating"
+            rm -rf "/etc/letsencrypt/live/${HostedDomain}"
+        else
+            echo "ok - Prod Cert"
+        fi
+    fi
+fi
+
 # If no LetsEncrypt certs are present - generate a set
 if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
     echo "No Certificates detected - $(ls /etc/letsencrypt/live/)"
@@ -27,7 +50,7 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
 
     CertbotParameter=""
     if [ "${LetsencryptProdCert}" != "true" ]; then
-    CertbotParameter="--test-cert "
+        CertbotParameter="--test-cert "
     fi
     Command="certbot certonly -v ${CertbotParameter}--standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos"
 
