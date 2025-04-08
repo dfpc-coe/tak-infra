@@ -25,7 +25,7 @@ if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
     ISSUER=$(openssl x509 -noout -issuer -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem")
 
     # Check if the issuer is from the Let's Encrypt staging environment
-    if echo "$ISSUER" | grep -q "Fake LE Intermediate"; then
+    if echo "$ISSUER" | grep -q "STAGING"; then
         if [ "${LetsencryptProdCert}" != "true" ]; then
             echo "ok - Test Cert"
         else
