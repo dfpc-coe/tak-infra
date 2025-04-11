@@ -2,6 +2,7 @@
 *CoreConfig.xml
 *UserAuthentication.xml
 tak-data/
+takserver-docker-*.zip
 
 # Logs
 logs
