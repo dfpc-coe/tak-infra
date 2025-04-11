@@ -19,9 +19,21 @@ for (const env of [
     }
 }
 
+// Get AWS Root CA as the LDAP Stack is behind an NLB with an AWS Cert
 const Amazon_Root_Cert = await (await fetch('https://www.amazontrust.com/repository/AmazonRootCA1.pem')).text();
-
 await fsp.writeFile('/tmp/AmazonRootCA1.pem', Amazon_Root_Cert);
+
+try {
+    await fsp.access('/opt/tak/certs/files/aws-acm-root.jks');
+    console.log('ok - AWS Root Cert - Regenerating');
+    await fsp.unlink('/opt/tak/certs/files/aws-acm-root.jks');
+} catch (err) {
+    if (err instanceof Error && err.code === 'EEXIST') {
+        console.log('ok - No AWS Root Cert - Regenerating');
+    } else {
+        console.error(err);
+    }
+}
 
 $.execSync('yes | keytool -import -file /tmp/AmazonRootCA1.pem -alias AWS -deststoretype JKS -deststorepass INTENTIONALLY_NOT_SENSITIVE -keystore /opt/tak/certs/files/aws-acm-root.jks', {
     stdio: 'inherit'
