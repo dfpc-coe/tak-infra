@@ -1,5 +1,5 @@
 import cf from '@openaddresses/cloudfriend';
-import API from './lib/api.js';
+import API from './lib/service.js';
 
 export default cf.merge(
     API,

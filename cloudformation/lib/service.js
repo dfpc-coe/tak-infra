@@ -321,6 +321,6 @@ export default {
                     TargetGroupArn: cf.ref('TargetGroup8089')
                 }]
             }
-        },
-    },
+        }
+    }
 };

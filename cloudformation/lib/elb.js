@@ -191,7 +191,7 @@ export default {
                 ],
                 Path: '/service-role/'
             }
-        },
+        }
     },
     Outputs: {
         API: {

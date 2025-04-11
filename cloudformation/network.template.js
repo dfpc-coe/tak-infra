@@ -23,8 +23,8 @@ export default cf.merge(
                 Type: 'String',
                 Default: 'prod'
             }
-        },
-    },
+        }
+    }
 //    RDSAlarms({
 //       prefix: 'Batch',
 //       topic: cf.ref('AlarmTopic'),
