@@ -19,13 +19,15 @@ for (const env of [
     }
 }
 
+// Get AWS Root CA as the LDAP Stack is behind an NLB with an AWS Cert
 const Amazon_Root_Cert = await (await fetch('https://www.amazontrust.com/repository/AmazonRootCA1.pem')).text();
-
 await fsp.writeFile('/tmp/AmazonRootCA1.pem', Amazon_Root_Cert);
 
-$.execSync('yes | keytool -import -file /tmp/AmazonRootCA1.pem -alias AWS -deststoretype JKS -deststorepass INTENTIONALLY_NOT_SENSITIVE -keystore /opt/tak/certs/files/aws-acm-root.jks', {
+$.execSync('yes | keytool -import -file /tmp/AmazonRootCA1.pem -alias AWS -deststoretype JKS -deststorepass INTENTIONALLY_NOT_SENSITIVE -keystore /tmp/AmazonRootCA1.jks', {
     stdio: 'inherit'
 });
+
+await fsp.rename('/tmp/AmazonRootCA1.jks', '/opt/tak/certs/files/aws-acm-root.jks');
 
 const LDAP_DN = process.env.LDAP_Domain.split('.').map((part) => {
     return `dc=${part}`;
