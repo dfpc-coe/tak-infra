@@ -1,6 +1,5 @@
 import cf from '@openaddresses/cloudfriend';
 import DB from './lib/db.js';
-import API from './lib/api.js';
 import Alarms from './lib/alarms.js';
 import KMS from './lib/kms.js';
 import EFS from './lib/efs.js';
