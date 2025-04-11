@@ -9,24 +9,17 @@ set -euo pipefail
 
 echo "NodeJS Version: $(node --version)"
 
-# Enusre Certs Directory is preset
+# Ensure TAK certs Directory is present
 if [ -d "/opt/tak/certs/files/" ]; then
     mkdir -p "/opt/tak/certs/files/"
 fi
 
-# Copy EFS Persisted certs to Let's Encrypt Dir
-if [ -d "/opt/tak/certs/files/${HostedDomain}" ]; then
-    mkdir -p "/etc/letsencrypt/live/${HostedDomain}"
-
-    echo "ok - Listing /opt/tak/certs/files/"
-    ls "/opt/tak/certs/files/"
-
-    echo "ok - Listing /opt/tak/certs/files/${HostedDomain}/"
-    ls "/opt/tak/certs/files/${HostedDomain}/"
-
-    echo "ok - Copying ${HostedDomain} to Let's Encrypt Working Dir"
-    cp "/opt/tak/certs/files/${HostedDomain}/"* "/etc/letsencrypt/live/${HostedDomain}/"
-fi;
+# Attempt to restore Certbot Cronjob or save it, if it exists
+if [ ! -e "/etc/cron.d/certbot" ]; then
+    cp /etc/letsencrypt/certbot.cron /etc/cron.d/certbot || true
+else
+    cp /etc/cron.d/certbot /etc/letsencrypt/certbot.cron || true
+fi
 
 # If LetsEncrypt certs are present - check validity
 if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
@@ -64,7 +57,7 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
         CertbotParameter="--test-cert "
     fi
 
-    Command="certbot certonly -v ${CertbotParameter}--standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos --cert-name ${HostedDomain}"
+    Command="certbot certonly -v ${CertbotParameter}--standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos --cert-name ${HostedDomain} --deploy-hook /opt/tak/letsencrypt-deploy-hook-script.sh"
 
     while ! $Command; do
         echo "not ok - Command failed, retrying in 10 seconds..."
@@ -72,6 +65,10 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
         node ./Ensure80.js
     done
 
+    # Save Certbot Cronjob
+    cp /etc/cron.d/certbot /etc/letsencrypt/certbot.cron
+
+    # Generate TAK certs
     /opt/tak/certs/cert-metadata.sh
 
     mkdir -p "/opt/tak/certs/files/${HostedDomain}/"

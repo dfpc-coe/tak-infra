@@ -302,6 +302,14 @@ export default {
                             Resource: [
                                 cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/tak-admin-cert'])
                             ]
+                        },{
+                            Effect: 'Allow',
+                            Action: [
+                                'ecs:UpdateService'
+                            ],
+                            Resource: [
+                                cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':service/coe-ecs-', cf.ref('Environment'), '/', cf.stackName, '-Service'])
+                            ]
                         }]
                     }
                 }]
@@ -356,9 +364,24 @@ export default {
                 ExecutionRoleArn: cf.getAtt('ExecRole', 'Arn'),
                 TaskRoleArn: cf.getAtt('TaskRole', 'Arn'),
                 Volumes: [{
-                    Name: cf.stackName,
+                    Name: cf.join([cf.stackName, '-tak']),
                     EFSVolumeConfiguration: {
-                        FilesystemId: cf.ref('EFSFileSystem')
+                        FilesystemId: cf.ref('EFSFileSystem'),
+                        TransitEncryption: 'ENABLED',
+                        AuthorizationConfig: {
+                            AccessPointId: cf.ref('EFSAccessPointTAK')
+                        },
+                        RootDirectory: '/'
+                    }
+                },{
+                    Name: cf.join([cf.stackName, '-letsencrypt']),
+                    EFSVolumeConfiguration: {
+                        FilesystemId: cf.ref('EFSFileSystem'),
+                        TransitEncryption: 'ENABLED',
+                        AuthorizationConfig: {
+                            AccessPointId: cf.ref('EFSAccessPointLetsEncrypt')
+                        },
+                        RootDirectory: '/'
                     }
                 }],
                 ContainerDefinitions: [{
@@ -366,7 +389,10 @@ export default {
                     Image: cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/coe-ecr-tak:', cf.ref('GitSha')]),
                     MountPoints: [{
                         ContainerPath: '/opt/tak/certs/files',
-                        SourceVolume: cf.stackName
+                        SourceVolume: cf.join([cf.stackName, '-tak'])
+                    },{
+                        ContainerPath: '/etc/letsencrypt',
+                        SourceVolume: cf.join([cf.stackName, '-letsencrypt'])
                     }],
                     PortMappings: [{
                         ContainerPort: 8443
@@ -395,6 +421,12 @@ export default {
                     },{
                         Name: 'LetsencryptProdCert',
                         Value: cf.ref('LetsencryptProdCert')
+                    },{
+                        Name: 'ECS_Cluster_Name',
+                        Value: cf.join(['coe-ecs-', cf.ref('Environment')])
+                    },{
+                        Name: 'ECS_Service_Name',
+                        Value: cf.join([cf.stackName,  '-Service'])
                     },{
                         Name: 'LDAP_Password',
                         Value: cf.join(['{{resolve:secretsmanager:coe-auth-', cf.ref('Environment'), '/svc:SecretString:password:AWSCURRENT}}'])
