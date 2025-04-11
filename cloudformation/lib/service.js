@@ -476,42 +476,6 @@ export default {
                 }]
             }
         },
-        ServiceSecurityGroup: {
-            Type: 'AWS::EC2::SecurityGroup',
-            Properties: {
-                Tags: [{
-                    Key: 'Name',
-                    Value: cf.join('-', [cf.stackName, 'ecs-sg'])
-                }],
-                GroupDescription: 'Allow access to TAK ports',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
-                SecurityGroupIngress: [{
-                    Description: 'ELB Traffic',
-                    SourceSecurityGroupId: cf.ref('ELBSecurityGroup'),
-                    IpProtocol: 'tcp',
-                    FromPort: 8443,
-                    ToPort: 8443
-                },{
-                    Description: 'ELB Traffic',
-                    SourceSecurityGroupId: cf.ref('ELBSecurityGroup'),
-                    IpProtocol: 'tcp',
-                    FromPort: 80,
-                    ToPort: 80
-                },{
-                    Description: 'ELB Traffic',
-                    SourceSecurityGroupId: cf.ref('ELBSecurityGroup'),
-                    IpProtocol: 'tcp',
-                    FromPort: 8446,
-                    ToPort: 8446
-                },{
-                    Description: 'ELB Traffic',
-                    SourceSecurityGroupId: cf.ref('ELBSecurityGroup'),
-                    IpProtocol: 'tcp',
-                    FromPort: 8089,
-                    ToPort: 8089
-                }]
-            }
-        },
         ETLFunctionRole: {
             Type: 'AWS::IAM::Role',
             Properties: {
