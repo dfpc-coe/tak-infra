@@ -12,6 +12,10 @@
 
 ### Pending Release
 
+### v1.5.0
+
+- :rocket: Use a local TAK Server bundle is available & fallback to S3 Bucket
+
 ### v1.4.0
 
 - :rocket: Improvements to Certificate Issuance
