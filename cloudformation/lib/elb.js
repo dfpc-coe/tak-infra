@@ -1,63 +1,6 @@
 import cf from '@openaddresses/cloudfriend';
 
 export default {
-    Parameters: {
-        EnableExecute: {
-            Description: 'Allow SSH into docker container - should only be enabled for limited debugging',
-            Type: 'String',
-            AllowedValues: ['true', 'false'],
-            Default: 'false'
-        },
-        CertificateCountry: {
-            Description: '2 Letter Country Code',
-            Type: 'String',
-            Default: 'US'
-        },
-        CertificateState: {
-            Description: '2 Letter State Code',
-            Type: 'String',
-            Default: 'CO'
-        },
-        CertificateCity: {
-            Description: 'City Name',
-            Type: 'String',
-            Default: 'Grand-Junction'
-        },
-        CertificateOrg: {
-            Description: 'Organization',
-            Type: 'String',
-            Default: 'TAK'
-        },
-        CertificateOrgUnit: {
-            Description: 'Organization Unit',
-            Type: 'String',
-            Default: 'TAK-Unit'
-        },
-        HostedDomain: {
-            Description: 'Hosted Domain',
-            Type: 'String'
-        },
-        HostedEmail: {
-            Description: 'Hosted Email',
-            Type: 'String'
-        },
-        LetsencryptProdCert: {
-            Description: 'Issue Let\'s Encryp Production Certificate?',
-            Type: 'String',
-            AllowedValues: ['true', 'false'],
-            Default: 'false'
-        },
-        LDAPDomain: {
-            Description: 'LDAP Domain',
-            Type: 'String',
-            Default: 'example.com'
-        },
-        LDAPSecureUrl: {
-            Description: 'LDAP Secure Connection URL',
-            Type: 'String',
-            Default: 'ldaps://example.com:636'
-        }
-    },
     Resources: {
         ServiceSecurityGroup: {
             Type: 'AWS::EC2::SecurityGroup',
