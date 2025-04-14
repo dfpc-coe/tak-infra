@@ -28,5 +28,14 @@ export default {
                 }
             }
         }
+    },
+    Outputs: {
+        KMS: {
+            Description: 'KMS',
+            Export: {
+                Name: cf.join([cf.stackName, '-kms'])
+            },
+            Value: cf.getAtt('KMS', 'Arn')
+        }
     }
 };

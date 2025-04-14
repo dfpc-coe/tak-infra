@@ -59,71 +59,6 @@ export default {
         }
     },
     Resources: {
-        Logs: {
-            Type: 'AWS::Logs::LogGroup',
-            Properties: {
-                LogGroupName: cf.stackName,
-                RetentionInDays: 7
-            }
-        },
-        TAKAdminP12Secret: {
-            Type: 'AWS::SecretsManager::Secret',
-            Properties: {
-                Description: cf.join([cf.stackName, ' TAK Server Admin key (p12)']),
-                Name: cf.join([cf.stackName, '/tak-admin-cert']),
-                KmsKeyId: cf.ref('KMS')
-            }
-        },
-        ELB: {
-            Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer',
-            Properties: {
-                Name: cf.stackName,
-                Type: 'network',
-                SecurityGroups: [cf.ref('ELBSecurityGroup')],
-                Subnets:  [
-                    cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-a'])),
-                    cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-b']))
-                ]
-            }
-
-        },
-        ELBSecurityGroup: {
-            Type : 'AWS::EC2::SecurityGroup',
-            Properties : {
-                Tags: [{
-                    Key: 'Name',
-                    Value: cf.join('-', [cf.stackName, 'elb-sg'])
-                }],
-                GroupDescription: 'Allow TAK Traffic into ELB',
-                SecurityGroupIngress: [{
-                    CidrIp: '0.0.0.0/0',
-                    IpProtocol: 'tcp',
-                    FromPort: 443,
-                    ToPort: 443
-                },{
-                    CidrIp: '0.0.0.0/0',
-                    IpProtocol: 'tcp',
-                    FromPort: 80,
-                    ToPort: 80
-                },{
-                    CidrIp: '0.0.0.0/0',
-                    IpProtocol: 'tcp',
-                    FromPort: 8443,
-                    ToPort: 8443
-                },{
-                    CidrIp: '0.0.0.0/0',
-                    IpProtocol: 'tcp',
-                    FromPort: 8446,
-                    ToPort: 8446
-                },{
-                    CidrIp: '0.0.0.0/0',
-                    IpProtocol: 'tcp',
-                    FromPort: 8089,
-                    ToPort: 8089
-                }],
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
-            }
-        },
         Listener443: {
             Type: 'AWS::ElasticLoadBalancingV2::Listener',
             Properties: {
@@ -131,7 +66,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8446')
                 }],
-                LoadBalancerArn: cf.ref('ELB'),
+                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
                 Port: 443,
                 Protocol: 'TCP'
             }
@@ -143,7 +78,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup80')
                 }],
-                LoadBalancerArn: cf.ref('ELB'),
+                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
                 Port: 80,
                 Protocol: 'TCP'
             }
@@ -155,7 +90,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8443')
                 }],
-                LoadBalancerArn: cf.ref('ELB'),
+                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
                 Port: 8443,
                 Protocol: 'TCP'
             }
@@ -167,7 +102,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8446')
                 }],
-                LoadBalancerArn: cf.ref('ELB'),
+                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
                 Port: 8446,
                 Protocol: 'TCP'
             }
@@ -179,14 +114,13 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8089')
                 }],
-                LoadBalancerArn: cf.ref('ELB'),
+                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
                 Port: 8089,
                 Protocol: 'TCP'
             }
         },
         TargetGroup8443: {
             Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
-            DependsOn: 'ELB',
             Properties: {
                 Port: 8443,
                 Protocol: 'TCP',
@@ -203,7 +137,6 @@ export default {
         },
         TargetGroup80: {
             Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
-            DependsOn: 'ELB',
             Properties: {
                 Port: 80,
                 Protocol: 'TCP',
@@ -220,7 +153,6 @@ export default {
         },
         TargetGroup8446: {
             Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
-            DependsOn: 'ELB',
             Properties: {
                 Port: 8446,
                 Protocol: 'TCP',
@@ -237,7 +169,6 @@ export default {
         },
         TargetGroup8089: {
             Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
-            DependsOn: 'ELB',
             Properties: {
                 Port: 8089,
                 Protocol: 'TCP',
@@ -250,6 +181,125 @@ export default {
                 HealthCheckProtocol: 'TCP',
                 HealthCheckTimeoutSeconds: 10,
                 HealthyThresholdCount: 2
+            }
+        },
+        TaskDefinition: {
+            Type: 'AWS::ECS::TaskDefinition',
+            Properties: {
+                Family: cf.stackName,
+                Cpu: 1024 * 4,
+                Memory: 4096 * 4,
+                NetworkMode: 'awsvpc',
+                RequiresCompatibilities: ['FARGATE'],
+                Tags: [{
+                    Key: 'Name',
+                    Value: cf.join('-', [cf.stackName, 'api'])
+                }],
+                ExecutionRoleArn: cf.getAtt('ExecRole', 'Arn'),
+                TaskRoleArn: cf.getAtt('TaskRole', 'Arn'),
+                Volumes: [{
+                    Name: cf.join([cf.stackName, '-tak']),
+                    EFSVolumeConfiguration: {
+                        FilesystemId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs'])),
+                        TransitEncryption: 'ENABLED',
+                        AuthorizationConfig: {
+                            AccessPointId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs-ap-certs']))
+                        },
+                        RootDirectory: '/'
+                    }
+                },{
+                    Name: cf.join([cf.stackName, '-letsencrypt']),
+                    EFSVolumeConfiguration: {
+                        FilesystemId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs'])),
+                        TransitEncryption: 'ENABLED',
+                        AuthorizationConfig: {
+                            AccessPointId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs-ap-letsencrypt']))
+                        },
+                        RootDirectory: '/'
+                    }
+                }],
+                ContainerDefinitions: [{
+                    Name: 'api',
+                    Image: cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/coe-ecr-tak:', cf.ref('GitSha')]),
+                    MountPoints: [{
+                        ContainerPath: '/opt/tak/certs/files',
+                        SourceVolume: cf.join([cf.stackName, '-tak'])
+                    },{
+                        ContainerPath: '/etc/letsencrypt',
+                        SourceVolume: cf.join([cf.stackName, '-letsencrypt'])
+                    }],
+                    PortMappings: [{
+                        ContainerPort: 8443
+                    },{
+                        ContainerPort: 80
+                    },{
+                        ContainerPort: 8446
+                    },{
+                        ContainerPort: 8089
+                    }],
+                    Environment: [{
+                        Name: 'LDAP_Domain',
+                        Value: cf.ref('LDAPDomain')
+                    },{
+                        Name: 'LDAP_SECURE_URL',
+                        Value: cf.ref('LDAPSecureUrl')
+                    },{
+                        Name: 'StackName',
+                        Value: cf.stackName
+                    },{
+                        Name: 'HostedEmail',
+                        Value: cf.ref('HostedEmail')
+                    },{
+                        Name: 'HostedDomain',
+                        Value: cf.ref('HostedDomain')
+                    },{
+                        Name: 'LetsencryptProdCert',
+                        Value: cf.ref('LetsencryptProdCert')
+                    },{
+                        Name: 'ECS_Cluster_Name',
+                        Value: cf.join(['coe-ecs-', cf.ref('Environment')])
+                    },{
+                        Name: 'ECS_Service_Name',
+                        Value: cf.join([cf.stackName,  '-Service'])
+                    },{
+                        Name: 'LDAP_Password',
+                        Value: cf.sub('{{resolve:secretsmanager:coe-auth-${Environment}/svc:SecretString:password:AWSCURRENT}}')
+                    },{
+                        Name: 'PostgresUsername',
+                        Value: cf.sub('{{resolve:secretsmanager:coe-tak-network-${Environment}/rds/secret:SecretString:username:AWSCURRENT}}')
+                    },{
+                        Name: 'PostgresPassword',
+                        Value: cf.sub('{{resolve:secretsmanager:coe-tak-network-${Environment}/rds/secret:SecretString:password:AWSCURRENT}}')
+                    },{
+                        Name: 'PostgresURL',
+                        Value: cf.join(['postgresql://', cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-db-endpoint'])), ':5432/tak_ps_etl'])
+                    },{
+                        Name: 'COUNTRY',
+                        Value: cf.ref('CertificateCountry')
+                    },{
+                        Name: 'STATE',
+                        Value: cf.ref('CertificateState')
+                    },{
+                        Name: 'CITY',
+                        Value: cf.ref('CertificateCity')
+                    },{
+                        Name: 'ORGANIZATION',
+                        Value: cf.ref('CertificateOrg')
+                    },{
+                        Name: 'ORGANIZATIONAL_UNIT',
+                        Value: cf.ref('CertificateOrgUnit')
+                    }],
+                    LogConfiguration: {
+                        LogDriver: 'awslogs',
+                        Options: {
+                            'awslogs-group': cf.stackName,
+                            'awslogs-region': cf.region,
+                            'awslogs-stream-prefix': cf.stackName,
+                            'awslogs-create-group': true
+                        }
+                    },
+                    Essential: true
+                }]
             }
         },
         TaskRole: {
@@ -283,7 +333,9 @@ export default {
                                 'kms:Decrypt',
                                 'kms:GenerateDataKey'
                             ],
-                            Resource: [cf.getAtt('KMS', 'Arn')]
+                            Resource: [
+                                cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-kms']))
+                            ]
                         },{
                             Effect: 'Allow',
                             Action: [
@@ -349,125 +401,6 @@ export default {
                 Path: '/service-role/'
             }
         },
-        TaskDefinition: {
-            Type: 'AWS::ECS::TaskDefinition',
-            Properties: {
-                Family: cf.stackName,
-                Cpu: 1024 * 4,
-                Memory: 4096 * 4,
-                NetworkMode: 'awsvpc',
-                RequiresCompatibilities: ['FARGATE'],
-                Tags: [{
-                    Key: 'Name',
-                    Value: cf.join('-', [cf.stackName, 'api'])
-                }],
-                ExecutionRoleArn: cf.getAtt('ExecRole', 'Arn'),
-                TaskRoleArn: cf.getAtt('TaskRole', 'Arn'),
-                Volumes: [{
-                    Name: cf.join([cf.stackName, '-tak']),
-                    EFSVolumeConfiguration: {
-                        FilesystemId: cf.ref('EFSFileSystem'),
-                        TransitEncryption: 'ENABLED',
-                        AuthorizationConfig: {
-                            AccessPointId: cf.ref('EFSAccessPointTAK')
-                        },
-                        RootDirectory: '/'
-                    }
-                },{
-                    Name: cf.join([cf.stackName, '-letsencrypt']),
-                    EFSVolumeConfiguration: {
-                        FilesystemId: cf.ref('EFSFileSystem'),
-                        TransitEncryption: 'ENABLED',
-                        AuthorizationConfig: {
-                            AccessPointId: cf.ref('EFSAccessPointLetsEncrypt')
-                        },
-                        RootDirectory: '/'
-                    }
-                }],
-                ContainerDefinitions: [{
-                    Name: 'api',
-                    Image: cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/coe-ecr-tak:', cf.ref('GitSha')]),
-                    MountPoints: [{
-                        ContainerPath: '/opt/tak/certs/files',
-                        SourceVolume: cf.join([cf.stackName, '-tak'])
-                    },{
-                        ContainerPath: '/etc/letsencrypt',
-                        SourceVolume: cf.join([cf.stackName, '-letsencrypt'])
-                    }],
-                    PortMappings: [{
-                        ContainerPort: 8443
-                    },{
-                        ContainerPort: 80
-                    },{
-                        ContainerPort: 8446
-                    },{
-                        ContainerPort: 8089
-                    }],
-                    Environment: [{
-                        Name: 'LDAP_Domain',
-                        Value: cf.ref('LDAPDomain')
-                    },{
-                        Name: 'LDAP_SECURE_URL',
-                        Value: cf.ref('LDAPSecureUrl')
-                    },{
-                        Name: 'StackName',
-                        Value: cf.stackName
-                    },{
-                        Name: 'HostedEmail',
-                        Value: cf.ref('HostedEmail')
-                    },{
-                        Name: 'HostedDomain',
-                        Value: cf.ref('HostedDomain')
-                    },{
-                        Name: 'LetsencryptProdCert',
-                        Value: cf.ref('LetsencryptProdCert')
-                    },{
-                        Name: 'ECS_Cluster_Name',
-                        Value: cf.join(['coe-ecs-', cf.ref('Environment')])
-                    },{
-                        Name: 'ECS_Service_Name',
-                        Value: cf.join([cf.stackName,  '-Service'])
-                    },{
-                        Name: 'LDAP_Password',
-                        Value: cf.join(['{{resolve:secretsmanager:coe-auth-', cf.ref('Environment'), '/svc:SecretString:password:AWSCURRENT}}'])
-                    },{
-                        Name: 'PostgresUsername',
-                        Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}')
-                    },{
-                        Name: 'PostgresPassword',
-                        Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}')
-                    },{
-                        Name: 'PostgresURL',
-                        Value: cf.join(['postgresql://', cf.getAtt('DBInstance', 'Endpoint.Address'), ':5432/tak_ps_etl'])
-                    },{
-                        Name: 'COUNTRY',
-                        Value: cf.ref('CertificateCountry')
-                    },{
-                        Name: 'STATE',
-                        Value: cf.ref('CertificateState')
-                    },{
-                        Name: 'CITY',
-                        Value: cf.ref('CertificateCity')
-                    },{
-                        Name: 'ORGANIZATION',
-                        Value: cf.ref('CertificateOrg')
-                    },{
-                        Name: 'ORGANIZATIONAL_UNIT',
-                        Value: cf.ref('CertificateOrgUnit')
-                    }],
-                    LogConfiguration: {
-                        LogDriver: 'awslogs',
-                        Options: {
-                            'awslogs-group': cf.stackName,
-                            'awslogs-region': cf.region,
-                            'awslogs-stream-prefix': cf.stackName,
-                            'awslogs-create-group': true
-                        }
-                    },
-                    Essential: true
-                }]
-            }
-        },
         Service: {
             Type: 'AWS::ECS::Service',
             Properties: {
@@ -482,7 +415,9 @@ export default {
                 NetworkConfiguration: {
                     AwsvpcConfiguration: {
                         AssignPublicIp: 'ENABLED',
-                        SecurityGroups: [cf.ref('ServiceSecurityGroup')],
+                        SecurityGroups: [
+                            cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-service-sg']))
+                        ],
                         Subnets:  [
                             cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-a'])),
                             cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-b']))
@@ -507,69 +442,6 @@ export default {
                     TargetGroupArn: cf.ref('TargetGroup8089')
                 }]
             }
-        },
-        ServiceSecurityGroup: {
-            Type: 'AWS::EC2::SecurityGroup',
-            Properties: {
-                Tags: [{
-                    Key: 'Name',
-                    Value: cf.join('-', [cf.stackName, 'ecs-sg'])
-                }],
-                GroupDescription: 'Allow access to TAK ports',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
-                SecurityGroupIngress: [{
-                    Description: 'ELB Traffic',
-                    SourceSecurityGroupId: cf.ref('ELBSecurityGroup'),
-                    IpProtocol: 'tcp',
-                    FromPort: 8443,
-                    ToPort: 8443
-                },{
-                    Description: 'ELB Traffic',
-                    SourceSecurityGroupId: cf.ref('ELBSecurityGroup'),
-                    IpProtocol: 'tcp',
-                    FromPort: 80,
-                    ToPort: 80
-                },{
-                    Description: 'ELB Traffic',
-                    SourceSecurityGroupId: cf.ref('ELBSecurityGroup'),
-                    IpProtocol: 'tcp',
-                    FromPort: 8446,
-                    ToPort: 8446
-                },{
-                    Description: 'ELB Traffic',
-                    SourceSecurityGroupId: cf.ref('ELBSecurityGroup'),
-                    IpProtocol: 'tcp',
-                    FromPort: 8089,
-                    ToPort: 8089
-                }]
-            }
-        },
-        ETLFunctionRole: {
-            Type: 'AWS::IAM::Role',
-            Properties: {
-                RoleName: cf.stackName,
-                AssumeRolePolicyDocument: {
-                    Version: '2012-10-17',
-                    Statement: [{
-                        Effect: 'Allow',
-                        Principal: {
-                            Service: 'lambda.amazonaws.com'
-                        },
-                        Action: 'sts:AssumeRole'
-                    }]
-                },
-                Path: '/',
-                Policies: [],
-                ManagedPolicyArns: [
-                    cf.join(['arn:', cf.partition, ':iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'])
-                ]
-            }
-        }
-    },
-    Outputs: {
-        API: {
-            Description: 'API ELB',
-            Value: cf.join(['http://', cf.getAtt('ELB', 'DNSName')])
         }
     }
 };

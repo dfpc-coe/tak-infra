@@ -1,17 +1,10 @@
 import cf from '@openaddresses/cloudfriend';
-import DB from './lib/db.js';
-import API from './lib/api.js';
-import Alarms from './lib/alarms.js';
-import KMS from './lib/kms.js';
-import EFS from './lib/efs.js';
-// import {
-//    RDS as RDSAlarms
-// } from '@openaddresses/batch-alarms';
+import Service from './lib/service.js';
 
 export default cf.merge(
-    API, DB, KMS, Alarms, EFS,
+    Service,
     {
-        Description: 'Template for @tak-ps/tak-infra',
+        Description: 'ECS Service for @tak-ps/tak-infra',
         Parameters: {
             GitSha: {
                 Description: 'GitSha that is currently being deployed',
@@ -24,9 +17,4 @@ export default cf.merge(
             }
         }
     }
-//    RDSAlarms({
-//       prefix: 'Batch',
-//       topic: cf.ref('AlarmTopic'),
-//       instance: cf.ref('DBInstance')
-//    })
 );

@@ -16,7 +16,7 @@ The following are dependencies which need to be created:
 | `coe-ecs-<name>`      | ECS Cluster for API Service - [repo](https://github.com/dfpc-coe/ecs) |
 | `coe-ecr-tak`         | ECR Repository for storing Server Images - [repo](https://github.com/dfpc-coe/ecr)     |
 
-### Installation
+### Deploy Tooling Installation
 
 From the root directory, install the deploy dependencies
 
@@ -44,13 +44,23 @@ aws_access_key_id = <redacted>
 aws_secret_access_key = <redacted>
 ```
 
-Deployment can then be performed via the following:
+### Stack Deployment
+
+The CloudFormation is split into two stacks to ensure consistent deploy results.
+
+The first portion of the deploy deplots the ELB and all necessary DNS & filestore related
+components and the second portion deploys the ECS Service itself.
+
+Create Network Portion:
 
 ```
-npx deploy create <stack>
-npx deploy update <stack>
-npx deploy info <stack> --outputs
-npx deploy info <stack> --parameters
+deploy create <stack> --template ./cloudformation/network.template.js
+```
+
+Create Service Portion once DNS been set & propagated
+
+```
+deploy create <stack>
 ```
 
 Stacks can be created, deleted, cancelled, etc all via the deploy tool. For further information
