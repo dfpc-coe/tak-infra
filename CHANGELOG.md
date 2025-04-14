@@ -12,6 +12,10 @@
 
 ### Pending Release
 
+### v2.0.0
+
+- :tada: Split stack into ELB/DB components and ECS Service for more reliable DNS/Service creation
+
 ### v1.5.0
 
 - :rocket: Use a local TAK Server bundle is available & fallback to S3 Bucket
