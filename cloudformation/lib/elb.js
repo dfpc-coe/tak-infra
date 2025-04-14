@@ -199,7 +199,7 @@ export default {
                 ],
                 Path: '/service-role/'
             }
-        },
+        }
     },
     Outputs: {
         ServiceSG: {
