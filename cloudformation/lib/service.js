@@ -198,9 +198,24 @@ export default {
                 ExecutionRoleArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-role-exec'])),
                 TaskRoleArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-role-task'])),
                 Volumes: [{
-                    Name: cf.stackName,
+                    Name: cf.join([cf.stackName, '-tak']),
                     EFSVolumeConfiguration: {
-                        FilesystemId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs']))
+                        FilesystemId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs'])),
+                        TransitEncryption: 'ENABLED',
+                        AuthorizationConfig: {
+                            AccessPointId: cf.ref('EFSAccessPointTAK')
+                        },
+                        RootDirectory: '/'
+                    }
+                },{
+                    Name: cf.join([cf.stackName, '-letsencrypt']),
+                    EFSVolumeConfiguration: {
+                        FilesystemId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs'])),
+                        TransitEncryption: 'ENABLED',
+                        AuthorizationConfig: {
+                            AccessPointId: cf.ref('EFSAccessPointLetsEncrypt')
+                        },
+                        RootDirectory: '/'
                     }
                 }],
                 ContainerDefinitions: [{
@@ -208,7 +223,10 @@ export default {
                     Image: cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/coe-ecr-tak:', cf.ref('GitSha')]),
                     MountPoints: [{
                         ContainerPath: '/opt/tak/certs/files',
-                        SourceVolume: cf.stackName
+                        SourceVolume: cf.join([cf.stackName, '-tak'])
+                    },{
+                        ContainerPath: '/etc/letsencrypt',
+                        SourceVolume: cf.join([cf.stackName, '-letsencrypt'])
                     }],
                     PortMappings: [{
                         ContainerPort: 8443
@@ -237,6 +255,12 @@ export default {
                     },{
                         Name: 'LetsencryptProdCert',
                         Value: cf.ref('LetsencryptProdCert')
+                    },{
+                        Name: 'ECS_Cluster_Name',
+                        Value: cf.join(['coe-ecs-', cf.ref('Environment')])
+                    },{
+                        Name: 'ECS_Service_Name',
+                        Value: cf.join([cf.stackName,  '-Service'])
                     },{
                         Name: 'LDAP_Password',
                         Value: cf.sub('{{resolve:secretsmanager:coe-auth-${Environment}/svc:SecretString:password:AWSCURRENT}}')

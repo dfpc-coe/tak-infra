@@ -14,6 +14,42 @@ export default {
                 PerformanceMode: 'generalPurpose'
             }
         },
+        EFSAccessPointTAK: {
+            Type: 'AWS::EFS::AccessPoint',
+            Properties: {
+                FileSystemId: cf.ref('EFSFileSystem'),
+                PosixUser: {
+                    Uid: 0,
+                    Gid: 0
+                },
+                RootDirectory: {
+                    CreationInfo: {
+                        OwnerGid: 0,
+                        OwnerUid: 0,
+                        Permissions: '0777'
+                    },
+                    Path: '/opt/tak/certs/files'
+                }
+            }
+        },
+        EFSAccessPointLetsEncrypt: {
+            Type: 'AWS::EFS::AccessPoint',
+            Properties: {
+                FileSystemId: cf.ref('EFSFileSystem'),
+                PosixUser: {
+                    Uid: 0,
+                    Gid: 0
+                },
+                RootDirectory: {
+                    CreationInfo: {
+                        OwnerGid: 0,
+                        OwnerUid: 0,
+                        Permissions: '0777'
+                    },
+                    Path: '/etc/letsencrypt'
+                }
+            }
+        },
         EFSMountTargetSubnetA: {
             Type: 'AWS::EFS::MountTarget',
             Properties: {

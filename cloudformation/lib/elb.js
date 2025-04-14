@@ -153,6 +153,14 @@ export default {
                             Resource: [
                                 cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/tak-admin-cert'])
                             ]
+                        },{
+                            Effect: 'Allow',
+                            Action: [
+                                'ecs:UpdateService'
+                            ],
+                            Resource: [
+                                cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':service/coe-ecs-', cf.ref('Environment'), '/', cf.stackName, '-Service'])
+                            ]
                         }]
                     }
                 }]
@@ -191,7 +199,7 @@ export default {
                 ],
                 Path: '/service-role/'
             }
-        }
+        },
     },
     Outputs: {
         ServiceSG: {
