@@ -242,10 +242,10 @@ export default {
                         Value: cf.sub('{{resolve:secretsmanager:coe-auth-${Environment}/svc:SecretString:password:AWSCURRENT}}')
                     },{
                         Name: 'PostgresUsername',
-                        Value: cf.sub('{{resolve:secretsmanager:coe-tak-${Environment}/rds/secret:SecretString:username:AWSCURRENT}}')
+                        Value: cf.sub('{{resolve:secretsmanager:coe-tak-network-${Environment}/rds/secret:SecretString:username:AWSCURRENT}}')
                     },{
                         Name: 'PostgresPassword',
-                        Value: cf.sub('{{resolve:secretsmanager:coe-tak-${Environment}/rds/secret:SecretString:password:AWSCURRENT}}')
+                        Value: cf.sub('{{resolve:secretsmanager:coe-tak-network-${Environment}/rds/secret:SecretString:password:AWSCURRENT}}')
                     },{
                         Name: 'PostgresURL',
                         Value: cf.join(['postgresql://', cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-db-endpoint'])), ':5432/tak_ps_etl'])
