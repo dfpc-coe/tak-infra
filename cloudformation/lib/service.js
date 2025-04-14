@@ -203,7 +203,7 @@ export default {
                         FilesystemId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs'])),
                         TransitEncryption: 'ENABLED',
                         AuthorizationConfig: {
-                            AccessPointId: cf.ref('EFSAccessPointTAK')
+                            AccessPointId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs-ap-certs'])),
                         },
                         RootDirectory: '/'
                     }
@@ -213,7 +213,7 @@ export default {
                         FilesystemId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs'])),
                         TransitEncryption: 'ENABLED',
                         AuthorizationConfig: {
-                            AccessPointId: cf.ref('EFSAccessPointLetsEncrypt')
+                            AccessPointId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs-ap-letsencrypt'])),
                         },
                         RootDirectory: '/'
                     }

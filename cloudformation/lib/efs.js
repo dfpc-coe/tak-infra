@@ -91,6 +91,20 @@ export default {
                 Name: cf.join([cf.stackName, '-efs'])
             },
             Value: cf.ref('EFSFileSystem')
+        },
+        EFSLetsEncrypt: {
+            Description: 'EFS for TAK Server Config - Lets Encrypt AP',
+            Export: {
+                Name: cf.join([cf.stackName, '-efs-ap-letsencrypt'])
+            },
+            Value: cf.ref('EFSAccessPointLetsEncrypt')
+        },
+        EFSCerts: {
+            Description: 'EFS for TAK Server Config - Certs AP',
+            Export: {
+                Name: cf.join([cf.stackName, '-efs-ap-certs'])
+            },
+            Value: cf.ref('EFSAccessPointTAK')
         }
     }
 };
