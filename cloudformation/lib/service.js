@@ -195,8 +195,8 @@ export default {
                     Key: 'Name',
                     Value: cf.join('-', [cf.stackName, 'api'])
                 }],
-                ExecutionRoleArn: cf.ref('ExecRole'),
-                TaskRoleArn: cf.ref('TaskRole'),
+                ExecutionRoleArn: cf.getAtt('ExecRole', 'Arn'),
+                TaskRoleArn: cf.getAtt('TaskRole', 'Arn'),
                 Volumes: [{
                     Name: cf.join([cf.stackName, '-tak']),
                     EFSVolumeConfiguration: {
