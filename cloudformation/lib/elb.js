@@ -194,6 +194,34 @@ export default {
         }
     },
     Outputs: {
+        ServiceSG: {
+            Description: 'TAK Service SG',
+            Export: {
+                Name: cf.join([cf.stackName, '-service-sg'])
+            },
+            Value: cf.ref('ServiceSecurityGroup')
+        },
+        ExecRole: {
+            Description: 'TAK Service Exec Role',
+            Export: {
+                Name: cf.join([cf.stackName, '-role-exec'])
+            },
+            Value: cf.ref('ExecRole')
+        },
+        TaskRole: {
+            Description: 'TAK Service Task Role',
+            Export: {
+                Name: cf.join([cf.stackName, '-role-task'])
+            },
+            Value: cf.ref('ExecRole')
+        },
+        ELB: {
+            Description: 'ELB ARN',
+            Export: {
+                Name: cf.join([cf.stackName, '-elb'])
+            },
+            Value: cf.ref('ELB')
+        },
         API: {
             Description: 'API ELB',
             Value: cf.join(['http://', cf.getAtt('ELB', 'DNSName')])

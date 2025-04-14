@@ -122,6 +122,13 @@ export default {
         }
     },
     Outputs: {
+        DBEndpoint: {
+            Description: 'RDS Database Endpoint',
+            Export: {
+                Name: cf.join([cf.stackName, '-db-endpoint'])
+            },
+            Value: cf.getAtt('DBInstance', 'Endpoint.Address')
+        },
         DB: {
             Description: 'Postgres Connection String',
             Value: cf.join([

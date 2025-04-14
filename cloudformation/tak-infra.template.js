@@ -1,8 +1,8 @@
 import cf from '@openaddresses/cloudfriend';
-import API from './lib/service.js';
+import Service from './lib/service.js';
 
 export default cf.merge(
-    API,
+    Service,
     {
         Description: 'ECS Service for @tak-ps/tak-infra',
         Parameters: {

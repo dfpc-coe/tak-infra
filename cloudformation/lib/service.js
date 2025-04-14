@@ -66,7 +66,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8446')
                 }],
-                LoadBalancerArn: cf.ref('ELB'),
+                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
                 Port: 443,
                 Protocol: 'TCP'
             }
@@ -78,7 +78,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup80')
                 }],
-                LoadBalancerArn: cf.ref('ELB'),
+                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
                 Port: 80,
                 Protocol: 'TCP'
             }
@@ -90,7 +90,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8443')
                 }],
-                LoadBalancerArn: cf.ref('ELB'),
+                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
                 Port: 8443,
                 Protocol: 'TCP'
             }
@@ -102,7 +102,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8446')
                 }],
-                LoadBalancerArn: cf.ref('ELB'),
+                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
                 Port: 8446,
                 Protocol: 'TCP'
             }
@@ -114,14 +114,13 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8089')
                 }],
-                LoadBalancerArn: cf.ref('ELB'),
+                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
                 Port: 8089,
                 Protocol: 'TCP'
             }
         },
         TargetGroup8443: {
             Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
-            DependsOn: 'ELB',
             Properties: {
                 Port: 8443,
                 Protocol: 'TCP',
@@ -138,7 +137,6 @@ export default {
         },
         TargetGroup80: {
             Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
-            DependsOn: 'ELB',
             Properties: {
                 Port: 80,
                 Protocol: 'TCP',
@@ -155,7 +153,6 @@ export default {
         },
         TargetGroup8446: {
             Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
-            DependsOn: 'ELB',
             Properties: {
                 Port: 8446,
                 Protocol: 'TCP',
@@ -172,7 +169,6 @@ export default {
         },
         TargetGroup8089: {
             Type: 'AWS::ElasticLoadBalancingV2::TargetGroup',
-            DependsOn: 'ELB',
             Properties: {
                 Port: 8089,
                 Protocol: 'TCP',
@@ -199,12 +195,12 @@ export default {
                     Key: 'Name',
                     Value: cf.join('-', [cf.stackName, 'api'])
                 }],
-                ExecutionRoleArn: cf.getAtt('ExecRole', 'Arn'),
-                TaskRoleArn: cf.getAtt('TaskRole', 'Arn'),
+                ExecutionRoleArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-role-exec'])),
+                TaskRoleArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-role-task'])),
                 Volumes: [{
                     Name: cf.stackName,
                     EFSVolumeConfiguration: {
-                        FilesystemId: cf.ref('EFSFileSystem')
+                        FilesystemId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs']))
                     }
                 }],
                 ContainerDefinitions: [{
@@ -243,16 +239,16 @@ export default {
                         Value: cf.ref('LetsencryptProdCert')
                     },{
                         Name: 'LDAP_Password',
-                        Value: cf.join(['{{resolve:secretsmanager:coe-auth-', cf.ref('Environment'), '/svc:SecretString:password:AWSCURRENT}}'])
+                        Value: cf.sub('{{resolve:secretsmanager:coe-auth-${Environment}/svc:SecretString:password:AWSCURRENT}}')
                     },{
                         Name: 'PostgresUsername',
-                        Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}')
+                        Value: cf.sub('{{resolve:secretsmanager:coe-tak-${Environment}/rds/secret:SecretString:username:AWSCURRENT}}')
                     },{
                         Name: 'PostgresPassword',
-                        Value: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}')
+                        Value: cf.sub('{{resolve:secretsmanager:coe-tak-${Environment}/rds/secret:SecretString:password:AWSCURRENT}}')
                     },{
                         Name: 'PostgresURL',
-                        Value: cf.join(['postgresql://', cf.getAtt('DBInstance', 'Endpoint.Address'), ':5432/tak_ps_etl'])
+                        Value: cf.join(['postgresql://', cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-db-endpoint'])), ':5432/tak_ps_etl'])
                     },{
                         Name: 'COUNTRY',
                         Value: cf.ref('CertificateCountry')
@@ -296,7 +292,9 @@ export default {
                 NetworkConfiguration: {
                     AwsvpcConfiguration: {
                         AssignPublicIp: 'ENABLED',
-                        SecurityGroups: [cf.ref('ServiceSecurityGroup')],
+                        SecurityGroups: [
+                            cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-service-sg']))
+                        ],
                         Subnets:  [
                             cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-a'])),
                             cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-b']))

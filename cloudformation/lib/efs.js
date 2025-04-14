@@ -47,5 +47,14 @@ export default {
                 }]
             }
         }
+    },
+    Outputs: {
+        EFS: {
+            Description: 'EFS for TAK Server Config',
+            Export: {
+                Name: cf.join([cf.stackName, '-efs'])
+            },
+            Value: cf.ref('EFSFileSystem')
+        }
     }
 };
