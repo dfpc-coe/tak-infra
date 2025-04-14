@@ -103,103 +103,6 @@ export default {
                 VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
             }
         },
-        TaskRole: {
-            Type: 'AWS::IAM::Role',
-            Properties: {
-                AssumeRolePolicyDocument: {
-                    Version: '2012-10-17',
-                    Statement: [{
-                        Effect: 'Allow',
-                        Principal: {
-                            Service: 'ecs-tasks.amazonaws.com'
-                        },
-                        Action: 'sts:AssumeRole'
-                    }]
-                },
-                Policies: [{
-                    PolicyName: cf.join('-', [cf.stackName, 'api-policy']),
-                    PolicyDocument: {
-                        Statement: [{
-                            Effect: 'Allow',
-                            Action: [
-                                'ssmmessages:CreateControlChannel',
-                                'ssmmessages:CreateDataChannel',
-                                'ssmmessages:OpenControlChannel',
-                                'ssmmessages:OpenDataChannel'
-                            ],
-                            Resource: '*'
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'kms:Decrypt',
-                                'kms:GenerateDataKey'
-                            ],
-                            Resource: [cf.getAtt('KMS', 'Arn')]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'secretsmanager:Describe*',
-                                'secretsmanager:Get*',
-                                'secretsmanager:List*'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/*'])
-                            ]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'secretsmanager:Put*'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/tak-admin-cert'])
-                            ]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'ecs:UpdateService'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':service/coe-ecs-', cf.ref('Environment'), '/', cf.stackName, '-Service'])
-                            ]
-                        }]
-                    }
-                }]
-            }
-        },
-        ExecRole: {
-            Type: 'AWS::IAM::Role',
-            Properties: {
-                AssumeRolePolicyDocument: {
-                    Version: '2012-10-17',
-                    Statement: [{
-                        Effect: 'Allow',
-                        Principal: {
-                            Service: 'ecs-tasks.amazonaws.com'
-                        },
-                        Action: 'sts:AssumeRole'
-                    }]
-                },
-                Policies: [{
-                    PolicyName: cf.join([cf.stackName, '-api-logging']),
-                    PolicyDocument: {
-                        Statement: [{
-                            Effect: 'Allow',
-                            Action: [
-                                'logs:CreateLogGroup',
-                                'logs:CreateLogStream',
-                                'logs:PutLogEvents',
-                                'logs:DescribeLogStreams'
-                            ],
-                            Resource: [cf.join(['arn:', cf.partition, ':logs:*:*:*'])]
-                        }]
-                    }
-                }],
-                ManagedPolicyArns: [
-                    cf.join(['arn:', cf.partition, ':iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'])
-                ],
-                Path: '/service-role/'
-            }
-        }
     },
     Outputs: {
         ServiceSG: {
@@ -208,20 +111,6 @@ export default {
                 Name: cf.join([cf.stackName, '-service-sg'])
             },
             Value: cf.ref('ServiceSecurityGroup')
-        },
-        ExecRole: {
-            Description: 'TAK Service Exec Role',
-            Export: {
-                Name: cf.join([cf.stackName, '-role-exec'])
-            },
-            Value: cf.ref('ExecRole')
-        },
-        TaskRole: {
-            Description: 'TAK Service Task Role',
-            Export: {
-                Name: cf.join([cf.stackName, '-role-task'])
-            },
-            Value: cf.ref('ExecRole')
         },
         ELB: {
             Description: 'ELB ARN',
