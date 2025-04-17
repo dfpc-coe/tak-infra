@@ -21,84 +21,10 @@ else
     cp /etc/cron.d/certbot /etc/letsencrypt/certbot.cron || true
 fi
 
-# If LetsEncrypt certs are present - check validity
-if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
-    # Extract the issuer from the certificate
-    ISSUER=$(openssl x509 -noout -issuer -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem")
+/opt/tak/certs/cert-metadata.sh
+mkdir -p "/opt/tak/certs/files/${HostedDomain}/"
 
-    # Check if the issuer is from the Let's Encrypt staging environment
-    if echo "$ISSUER" | grep -q "STAGING"; then
-        if [ "${LetsencryptProdCert}" != "true" ]; then
-            echo "ok - Test Cert"
-        else
-            echo "ok - Production Cert Requested - Test Cert Current - Regenerating"
-            rm -rf "/etc/letsencrypt/live/${HostedDomain}"
-            rm -rf "/opt/tak/certs/files/${HostedDomain}"
-        fi
-    else
-        if [ "${LetsencryptProdCert}" != "true" ]; then
-            echo "ok - Test Cert Requested - Prod Cert Current - Regenerating"
-            rm -rf "/etc/letsencrypt/live/${HostedDomain}"
-            rm -rf "/opt/tak/certs/files/${HostedDomain}"
-        else
-            echo "ok - Prod Cert"
-        fi
-    fi
-fi
-
-# If no LetsEncrypt certs are present - generate a set
-if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
-    echo "ok - No Certificates detected, requesting one"
-
-    node ./Ensure80.js
-
-    CertbotParameter=""
-    if [ "${LetsencryptProdCert}" != "true" ]; then
-        CertbotParameter="--test-cert "
-    fi
-
-    Command="certbot certonly -v ${CertbotParameter}--standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos --cert-name ${HostedDomain} --deploy-hook /opt/tak/letsencrypt-deploy-hook-script.sh"
-
-    while ! $Command; do
-        echo "not ok - Command failed, retrying in 10 seconds..."
-        sleep 10
-        node ./Ensure80.js
-    done
-
-    # Save Certbot Cronjob
-    cp /etc/cron.d/certbot /etc/letsencrypt/certbot.cron
-
-    # Generate TAK certs
-    /opt/tak/certs/cert-metadata.sh
-
-    mkdir -p "/opt/tak/certs/files/${HostedDomain}/"
-
-    openssl x509 \
-        -text \
-        -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem" \
-        -noout
-
-    openssl pkcs12 \
-        -export \
-        -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem" \
-        -inkey "/etc/letsencrypt/live/${HostedDomain}/privkey.pem" \
-        -out "/opt/tak/certs/files/${HostedDomain}/letsencrypt.p12" \
-        -name "${HostedDomain}" \
-        -password "pass:atakatak"
-fi
-
-if [ ! -f "/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks" ]; then
-    cp "/etc/letsencrypt/live/${HostedDomain}/"* "/opt/tak/certs/files/${HostedDomain}/"
-
-    keytool \
-        -importkeystore \
-        -srcstorepass "atakatak" \
-        -deststorepass "atakatak" \
-        -destkeystore "/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks" \
-        -srckeystore "/opt/tak/certs/files/${HostedDomain}/letsencrypt.p12" \
-        -srcstoretype "pkcs12"
-fi
-
+# Check if TAK certs exist and generate them if not
 cd /opt/tak/certs
 if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
     /opt/tak/certs/makeRootCa.sh --ca-name ${StackName:-TAKServer}
@@ -110,6 +36,42 @@ if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
         --secret-id ${StackName}/tak-admin-cert \
         --secret-binary fileb://files/admin.p12 || true
 fi
+
+# Restore LetsEncrypt cert
+# If no previous LetsEncrypt certs exist, use the self-signed ones
+if [ ! -f "/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks" ]; then
+    if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
+        # Previous LetsEncrypt cert exists, convert it
+        echo "ok - Converting LetsEncrypt certs to TAK format"
+        openssl x509 \
+            -text \
+            -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem" \
+            -noout
+
+        openssl pkcs12 \
+            -export \
+            -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem" \
+            -inkey "/etc/letsencrypt/live/${HostedDomain}/privkey.pem" \
+            -out "/opt/tak/certs/files/${HostedDomain}/letsencrypt.p12" \
+            -name "${HostedDomain}" \
+            -password "pass:atakatak"
+
+        keytool \
+            -importkeystore \
+            -srcstorepass "atakatak" \
+            -deststorepass "atakatak" \
+            -destkeystore "/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks" \
+            -srckeystore "/opt/tak/certs/files/${HostedDomain}/letsencrypt.p12" \
+            -srcstoretype "pkcs12" 
+    else 
+        # No previous LetsEncrypt cert exists, use the self-signed one
+        echo "ok - Using self-signed certs instead of LetsEncrypt"
+        cp /opt/tak/certs/files/takserver.jks /opt/tak/certs/files/${HostedDomain}/letsencrypt.jks || true
+    fi
+fi
+
+# Request LetsEncrypt certs in background
+/opt/tak/letsencrypt-request-cert.sh &
 
 cd /opt/tak
 
