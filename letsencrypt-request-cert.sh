@@ -28,7 +28,7 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
     echo "ok - No Certificates detected, requesting one"
 
     # Wait for port TCP/80 to be ready
-    node ./Ensure80.js
+    node /opt/tak/Ensure80.js
 
     CertbotParameter=""
     if [ "${LetsencryptProdCert}" != "true" ]; then
@@ -40,7 +40,7 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
     while ! $Command; do
         echo "not ok - Command failed, retrying in 10 seconds..."
         sleep 10
-        node ./Ensure80.js
+        node /opt/tak/Ensure80.js
     done
 
     # Save Certbot Cronjob
