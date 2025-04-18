@@ -39,6 +39,7 @@ fi
 # Restore LetsEncrypt cert
 # If no previous LetsEncrypt certs exist, use the self-signed ones
 if [ ! -f "/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks" ]; then
+    mkdir /opt/tak/certs/files/${HostedDomain} || true
     if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
         # Previous LetsEncrypt cert exists, convert it
         echo "ok - Converting LetsEncrypt certs to TAK format"
@@ -65,7 +66,6 @@ if [ ! -f "/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks" ]; then
     else 
         # No previous LetsEncrypt cert exists, use the self-signed one
         echo "ok - Using self-signed certs instead of LetsEncrypt"
-        mkdir /opt/tak/certs/files/${HostedDomain} || true
         cp /opt/tak/certs/files/takserver.jks /opt/tak/certs/files/${HostedDomain}/letsencrypt.jks || true
     fi
 fi
