@@ -4,7 +4,7 @@
 
 ## AWS Deployment
 
-### 1. Pre-Reqs
+### 1. Pre-Requisites
 
 > [!IMPORTANT]
 > The TAK service assumes several pre-requisite dependencies are deployed before
