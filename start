@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-echo "NodeJS Version: $(node --version)"
+echo "NodeJS - Version: $(node --version)"
 
 # Ensure TAK certs Directory is present
 if [ -d "/opt/tak/certs/files/" ]; then
@@ -15,6 +15,7 @@ if [ -d "/opt/tak/certs/files/" ]; then
 fi
 
 # Attempt to restore Certbot Cronjob or save it, if it exists
+echo "Certbot - Restoring cronjob"
 if [ ! -e "/etc/cron.d/certbot" ]; then
     cp /etc/letsencrypt/certbot.cron /etc/cron.d/certbot || true
 else
@@ -24,6 +25,7 @@ fi
 # Check if TAK certs exist, otherwise generate them
 cd /opt/tak/certs
 if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
+    echo "TAK Server - Generating new certificates"
     /opt/tak/certs/cert-metadata.sh
     mkdir -p "/opt/tak/certs/files/${HostedDomain}/"
     /opt/tak/certs/makeRootCa.sh --ca-name ${StackName:-TAKServer}
@@ -42,7 +44,7 @@ if [ ! -f "/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks" ]; then
     mkdir /opt/tak/certs/files/${HostedDomain} || true
     if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
         # Previous LetsEncrypt cert exists, convert it
-        echo "ok - Converting LetsEncrypt certs to TAK format"
+        echo "TAK Server - Converting LetsEncrypt certs to TAK format"
         openssl x509 \
             -text \
             -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem" \
@@ -65,7 +67,7 @@ if [ ! -f "/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks" ]; then
             -srcstoretype "pkcs12" 
     else 
         # No previous LetsEncrypt cert exists, use the self-signed one
-        echo "ok - Using self-signed certs instead of LetsEncrypt"
+        echo "TAK Server - Using self-signed certs instead of LetsEncrypt certs"
         cp /opt/tak/certs/files/takserver.jks /opt/tak/certs/files/${HostedDomain}/letsencrypt.jks || true
     fi
 fi
@@ -73,8 +75,8 @@ fi
 # Request LetsEncrypt certs in background
 /opt/tak/letsencrypt-request-cert.sh &
 
+echo "TAK Server - Generating config file"
 cd /opt/tak
-
 node CoreConfig.js
 
 /opt/tak/validateConfig.sh /opt/tak/CoreConfig.xml
@@ -82,14 +84,16 @@ node CoreConfig.js
 java -jar /opt/tak/db-utils/SchemaManager.jar validate
 java -jar /opt/tak/db-utils/SchemaManager.jar upgrade
 
+echo "TAK Server - Starting server"
 /opt/tak/configureInDocker.sh init &
 
+echo "TAK Server - Elevating admin user privileges"
 SetAdminCommand="java -jar /opt/tak/utils/UserManager.jar certmod -A /opt/tak/certs/files/admin.pem"
 while ! $SetAdminCommand; do
-   echo "Making admin and admin failed, retrying in 10 seconds..."
+   echo "TAK Server - Elevating admin user privileges failed, retrying in 10 seconds..."
    sleep 10
 done
 
 # Run cron in foreground
-echo "ok - Starting cron for cert renewals"
+echo "Certbot - Starting cron for certbot renewals"
 /usr/sbin/cron -f
