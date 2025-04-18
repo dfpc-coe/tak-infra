@@ -27,7 +27,7 @@ $.execSync('yes | keytool -import -file /tmp/AmazonRootCA1.pem -alias AWS -dests
     stdio: 'inherit'
 });
 
-await fsp.rename('/tmp/AmazonRootCA1.jks', '/opt/tak/certs/files/aws-acm-root.jks');
+await fsp.copyFile('/tmp/AmazonRootCA1.jks', '/opt/tak/certs/files/aws-acm-root.jks');
 
 const LDAP_DN = process.env.LDAP_Domain.split('.').map((part) => {
     return `dc=${part}`;

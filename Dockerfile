@@ -1,6 +1,6 @@
 FROM eclipse-temurin:17-jammy
 RUN apt update \
-    && apt-get install -y emacs-nox net-tools netcat vim certbot curl libxml2-utils unzip nodejs awscli
+    && apt-get install -y cron emacs-nox net-tools vim certbot curl libxml2-utils unzip nodejs awscli
 
 ENV HOME=/opt/tak
 WORKDIR $HOME

@@ -1,0 +1,13 @@
+
+ *.md
+ bin/
+ cloudformation/
+ node_modules/
+ oas/
+ .deploy
+ upload
+ docker-compose.yml
+ # Git related files and folder
+ .git
+ .github
+ .gitignore
