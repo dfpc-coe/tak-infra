@@ -21,12 +21,11 @@ else
     cp /etc/cron.d/certbot /etc/letsencrypt/certbot.cron || true
 fi
 
-/opt/tak/certs/cert-metadata.sh
-mkdir -p "/opt/tak/certs/files/${HostedDomain}/"
-
-# Check if TAK certs exist and generate them if not
+# Check if TAK certs exist, otherwise generate them
 cd /opt/tak/certs
 if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
+    /opt/tak/certs/cert-metadata.sh
+    mkdir -p "/opt/tak/certs/files/${HostedDomain}/"
     /opt/tak/certs/makeRootCa.sh --ca-name ${StackName:-TAKServer}
     { yes || :; } | /opt/tak/certs/makeCert.sh ca intermediate-ca
     { yes || :; } | /opt/tak/certs/makeCert.sh server takserver
@@ -90,4 +89,6 @@ while ! $SetAdminCommand; do
    sleep 10
 done
 
-wait
+# Run cron in foreground
+echo "ok - Starting cron for cert renewals"
+/usr/sbin/cron -f
