@@ -65,7 +65,7 @@ if [ ! -f "/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks" ]; then
     else 
         # No previous LetsEncrypt cert exists, use the self-signed one
         echo "ok - Using self-signed certs instead of LetsEncrypt"
-        mkdir /opt/tak/certs/files/${HostedDomain}
+        mkdir /opt/tak/certs/files/${HostedDomain} || true
         cp /opt/tak/certs/files/takserver.jks /opt/tak/certs/files/${HostedDomain}/letsencrypt.jks || true
     fi
 fi
