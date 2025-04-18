@@ -11,12 +11,12 @@ if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
             echo "ok - Test Cert"
         else
             echo "ok - Production Cert Requested - Test Cert Current - Regenerating"
-            certbot delete --cert-name ${HostedDomain}
+            certbot delete --cert-name ${HostedDomain} --non-interactive
         fi
     else
         if [ "${LetsencryptProdCert}" != "true" ]; then
             echo "ok - Test Cert Requested - Prod Cert Current - Regenerating"
-            certbot delete --cert-name ${HostedDomain}
+            certbot delete --cert-name ${HostedDomain} --non-interactive
         else
             echo "ok - Prod Cert"
         fi
