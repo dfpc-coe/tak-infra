@@ -2,7 +2,7 @@
 
 # If LetsEncrypt certs are present - check validity
 if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
-    echo "Certbot - Checking validity of existing certs"
+    echo "ok - Certbot - Checking validity of existing certs"
 
     # Extract the issuer from the certificate
     ISSUER=$(openssl x509 -noout -issuer -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem")
@@ -10,24 +10,24 @@ if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
     # Check if the issuer is from the Let's Encrypt staging environment
     if echo "$ISSUER" | grep -q "STAGING"; then
         if [ "${LetsencryptProdCert}" != "true" ]; then
-            echo "Certbot - Staging cert exists"
+            echo "ok - Certbot - Staging cert exists"
         else
-            echo "Certbot - Staging cert exists, Production cert requested - Regenerating certs..."
+            echo "ok - Certbot - Staging cert exists, Production cert requested - Regenerating certs..."
             certbot delete --cert-name ${HostedDomain} --non-interactive
         fi
     else
         if [ "${LetsencryptProdCert}" != "true" ]; then
-            echo "Certbot - Production cert exists, Staging cert requested - Regenerating certs..."
+            echo "ok - Certbot - Production cert exists, Staging cert requested - Regenerating certs..."
             certbot delete --cert-name ${HostedDomain} --non-interactive
         else
-            echo "Certbot - Production cert exists"
+            echo "ok - Certbot - Production cert exists"
         fi
     fi
 fi
 
 # If no LetsEncrypt certs are present - generate a set
 if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
-    echo "Certbot - No existing certificates detected - Requesting new one"
+    echo "ok - Certbot - No existing certificates detected - Requesting new one"
 
     # Wait for port TCP/80 to be ready
     node /opt/tak/Ensure80.js
@@ -40,8 +40,7 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
     Command="certbot certonly -v ${CertbotParameter}--standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos --cert-name ${HostedDomain} --deploy-hook /opt/tak/letsencrypt-deploy-hook-script.sh"
 
     while ! $Command; do
-        echo "not ok - Command failed, retrying in 30 seconds..."
-        echo "Certbot - Port TCP/80 not ready for HTTP-01 challenge - Retrying in 30 seconds..."
+        echo "not ok - Certbot - Port TCP/80 not ready for HTTP-01 challenge - Retrying in 30 seconds..."
         sleep 30
         node /opt/tak/Ensure80.js
     done
@@ -53,7 +52,7 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
 
     rm -rf "/opt/tak/certs/files/${HostedDomain}"
 
-    echo "Certbot - New LetsEncrypt certs issued - Deploying new ECS task..."
+    echo "ok - Certbot - New LetsEncrypt certs issued - Deploying new ECS task..."
 
     aws ecs update-service --cluster $ECS_Cluster_Name --service $ECS_Service_Name --force-new-deployment
 fi
