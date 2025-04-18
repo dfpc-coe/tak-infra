@@ -38,8 +38,8 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
     Command="certbot certonly -v ${CertbotParameter}--standalone -d ${HostedDomain} --email ${HostedEmail} --non-interactive --agree-tos --cert-name ${HostedDomain} --deploy-hook /opt/tak/letsencrypt-deploy-hook-script.sh"
 
     while ! $Command; do
-        echo "not ok - Command failed, retrying in 10 seconds..."
-        sleep 10
+        echo "not ok - Command failed, retrying in 30 seconds..."
+        sleep 30
         node /opt/tak/Ensure80.js
     done
 
