@@ -10,7 +10,7 @@ if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
     # Check if the issuer is from the Let's Encrypt staging environment
     if echo "$ISSUER" | grep -q "STAGING"; then
         if [ "${LetsencryptProdCert}" != "true" ]; then
-            echo "ok - Certbot - Staging cert exists"
+            echo "ok - Certbot - Staging cert exists, Staging cert requested - Nothing to be done"
         else
             echo "ok - Certbot - Staging cert exists, Production cert requested - Regenerating certs..."
             certbot delete --cert-name ${HostedDomain} --non-interactive
@@ -20,7 +20,7 @@ if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
             echo "ok - Certbot - Production cert exists, Staging cert requested - Regenerating certs..."
             certbot delete --cert-name ${HostedDomain} --non-interactive
         else
-            echo "ok - Certbot - Production cert exists"
+            echo "ok - Certbot - Production cert exists, Production cert requested - Nothing to be done"
         fi
     fi
 fi

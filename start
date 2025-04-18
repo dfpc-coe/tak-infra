@@ -7,6 +7,7 @@
 
 set -euo pipefail
 
+echo "ok - TAK Server - New ECS Task starting..."
 echo "ok - NodeJS - Version: $(node --version)"
 
 # Ensure TAK certs Directory is present
@@ -87,12 +88,15 @@ java -jar /opt/tak/db-utils/SchemaManager.jar upgrade
 echo "ok - TAK Server - Starting server"
 /opt/tak/configureInDocker.sh init &
 
-echo "ok - TAK Server - Elevating admin user privileges"
+echo "ok - TAK Server - Starting to elevate admin user privileges..."
 SetAdminCommand="java -jar /opt/tak/utils/UserManager.jar certmod -A /opt/tak/certs/files/admin.pem"
 while ! $SetAdminCommand; do
    echo "not ok - TAK Server - Elevating admin user privileges failed, retrying in 10 seconds..."
    sleep 10
 done
+echo "ok - TAK Server - Elevating admin user privileges succeeded"
+
+echo "ok - TAK Server - New ECS Task successfully started"
 
 # Run cron in foreground
 echo "ok - Certbot - Starting cron for certbot renewals"
