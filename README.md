@@ -31,7 +31,7 @@ npm install
 An script to build docker images and publish them to your ECR is provided and can be run using:
 
 ```
-npm run ./bin/build
+npm run build
 ```
 
 from the root of the project. Ensure that you have created the necessary ECR repositories as described in the
