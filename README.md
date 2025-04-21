@@ -54,13 +54,13 @@ components and the second portion deploys the ECS Service itself.
 Create Network Portion:
 
 ```
-deploy create <stack> --template ./cloudformation/network.template.js
+npx deploy create <stack> --template ./cloudformation/network.template.js
 ```
 
 Create Service Portion once DNS been set & propagated
 
 ```
-deploy create <stack>
+npx deploy create <stack>
 ```
 
 Stacks can be created, deleted, cancelled, etc all via the deploy tool. For further information
