@@ -1,6 +1,14 @@
 import cf from '@openaddresses/cloudfriend';
 
 export default {
+    Parameters: {
+        IpAddressType: {
+            Description: 'ELB IP Address Type - IPv4-only or IPv4/IPv6-Dualstack',
+            Type: 'String',
+            AllowedValues: ['ipv4', 'dualstack'],
+            Default: 'ipv4'
+        }
+    },
     Resources: {
         ServiceSecurityGroup: {
             Type: 'AWS::EC2::SecurityGroup',
@@ -58,6 +66,7 @@ export default {
             Properties: {
                 Name: cf.stackName,
                 Type: 'network',
+                IpAddressType: cf.ref('IpAddressType'),
                 SecurityGroups: [cf.ref('ELBSecurityGroup')],
                 Subnets:  [
                     cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-a'])),

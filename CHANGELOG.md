@@ -12,6 +12,10 @@
 
 ### Pending Release
 
+### v2.1.0
+
+- :rocket: Moves Let's Encrypt cert requests via certbot into an asynchronous script that does not block the Docker entrypoint.
+
 ### v2.0.0
 
 - :tada: Split stack into ELB/DB components and ECS Service for more reliable DNS/Service creation

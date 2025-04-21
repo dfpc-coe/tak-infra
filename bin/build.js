@@ -4,11 +4,13 @@ import CP from 'child_process';
 process.env.GITSHA = sha();
 
 process.env.Environment = process.env.Environment || 'prod';
+process.env.AWS_PROFILE = process.env.AWS_PROFILE || 'default';
 
 for (const env of [
     'GITSHA',
     'AWS_REGION',
     'AWS_ACCOUNT_ID',
+    'AWS_PROFILE',
     'Environment',
 ]) {
     if (!process.env[env]) {
@@ -28,6 +30,7 @@ function login() {
         const $ = CP.exec(`
             aws ecr get-login-password \
                 --region $\{AWS_REGION\} \
+                --profile $\{AWS_PROFILE\} \
             | docker login \
                 --username AWS \
                 --password-stdin "$\{AWS_ACCOUNT_ID\}.dkr.ecr.$\{AWS_REGION\}.amazonaws.com"

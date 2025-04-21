@@ -4,10 +4,12 @@
 
 ## AWS Deployment
 
-### Pre-Reqs
+### 1. Pre-Requisites
 
-The TAK service assumes several pre-requisite dependencies are deployed before
-initial TAK Server deployment.
+> [!IMPORTANT]
+> The TAK service assumes several pre-requisite dependencies are deployed before
+> initial TAK Server deployment.
+
 The following are dependencies which need to be created:
 
 | Name                  | Notes |
@@ -16,7 +18,7 @@ The following are dependencies which need to be created:
 | `coe-ecs-<name>`      | ECS Cluster for API Service - [repo](https://github.com/dfpc-coe/ecs) |
 | `coe-ecr-tak`         | ECR Repository for storing Server Images - [repo](https://github.com/dfpc-coe/ecr)     |
 
-### Deploy Tooling Installation
+### 2. Install Tooling Dependencies
 
 From the root directory, install the deploy dependencies
 
@@ -24,55 +26,71 @@ From the root directory, install the deploy dependencies
 npm install
 ```
 
-Deployment to AWS is handled via AWS Cloudformation. The template can be found in the `./cloudformation`
+### 3. Building Docker Images & Pushing to ECR
+
+An script to build docker images and publish them to your ECR is provided and can be run using:
+
+```
+npm run ./bin/build
+```
+
+from the root of the project. Ensure that you have created the necessary ECR repositories as described in the
+previous step and that you have AWS credentials provided in your current terminal environment as an `aws ecr get-login-password`
+call will be issued.
+
+### 4. CloudFormation Stack Deployment
+Deployment to AWS is handled via AWS Cloudformation. The templates can be found in the `./cloudformation`
 directory. The deployment itself is performed by [Deploy](https://github.com/openaddresses/deploy) which
 was installed in the previous step.
 
-The deploy tool can be run via the following
+> [!NOTE] 
+> The deploy tool can be run via the following
+>
+> ```sh
+> npx deploy
+> ```
+>
+> To install it globally - view the deploy [README](https://github.com/openaddresses/deploy)
+>
+> Deploy uses your existing AWS credentials. Ensure that your `~/.aws/credentials` has an entry like:
+> 
+> ```
+> [coe]
+> aws_access_key_id = <redacted>
+> aws_secret_access_key = <redacted>
+> ```
 
-```sh
-npx deploy
-```
-
-To install it globally - view the deploy [README](https://github.com/openaddresses/deploy)
-
-Deploy uses your existing AWS credentials. Ensure that your `~/.aws/credentials` has an entry like:
-
-```
-[coe]
-aws_access_key_id = <redacted>
-aws_secret_access_key = <redacted>
-```
-
-### Stack Deployment
+#### Sub-Stack Deployment
 
 The CloudFormation is split into two stacks to ensure consistent deploy results.
 
-The first portion of the deploy deplots the ELB and all necessary DNS & filestore related
-components and the second portion deploys the ECS Service itself.
+The first portion deploys the ELB, database and all necessary related filestore
+components. The second portion deploys the ECS Service itself.
 
-Create Network Portion:
+Step 1: Create Network Portion:
 
 ```
 npx deploy create <stack> --template ./cloudformation/network.template.js
 ```
 
-Create Service Portion once DNS been set & propagated
+Step 2: Setup a DNS CNAME from your desired hostname for the TAK server to the ELB hostname. The ELB hostname is one of the CloudFormation template outputs. 
+
+Step3: Create Service Portion (Once DNS been set & propagated)
 
 ```
 npx deploy create <stack>
 ```
-
-Stacks can be created, deleted, cancelled, etc all via the deploy tool. For further information
-information about `deploy` functionality run the following for help.
-
-```sh
-npx deploy
-```
-
-Further help about a specific command can be obtained via something like:
-
-```sh
-npx deploy info --help
-```
+> [!NOTE] 
+> Stacks can be created, deleted, cancelled, etc all via the deploy tool. For further information
+> information about `deploy` functionality run the following for help.
+> 
+> ```sh
+> npx deploy
+> ```
+> 
+> Further help about a specific command can be obtained via something like:
+> 
+> ```sh
+> npx deploy info --help
+> ```
 
