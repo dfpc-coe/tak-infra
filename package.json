@@ -2,7 +2,7 @@
     "name": "@tak-ps/tak-infra",
     "type": "module",
     "private": true,
-    "version": "2.0.0",
+    "version": "2.1.0",
     "description": "CloudFormation managed infrastructure for TAK Server",
     "scripts": {
         "lint": "eslint cloudformation/ CoreConfig.js",
