@@ -31,7 +31,7 @@ npm install
 An script to build docker images and publish them to your ECR is provided and can be run using:
 
 ```
-npm run ./bin/build
+npm run build
 ```
 
 from the root of the project. Ensure that you have created the necessary ECR repositories as described in the
@@ -70,7 +70,7 @@ components. The second portion deploys the ECS Service itself.
 Step 1: Create Network Portion:
 
 ```
-deploy create <stack> --template ./cloudformation/network.template.js
+npx deploy create <stack> --template ./cloudformation/network.template.js
 ```
 
 Step 2: Setup a DNS CNAME from your desired hostname for the TAK server to the ELB hostname. The ELB hostname is one of the CloudFormation template outputs. 
@@ -78,7 +78,7 @@ Step 2: Setup a DNS CNAME from your desired hostname for the TAK server to the E
 Step3: Create Service Portion (Once DNS been set & propagated)
 
 ```
-deploy create <stack>
+npx deploy create <stack>
 ```
 > [!NOTE] 
 > Stacks can be created, deleted, cancelled, etc all via the deploy tool. For further information
