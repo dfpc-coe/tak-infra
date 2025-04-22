@@ -48,7 +48,7 @@ export default {
             Type: 'AWS::SecretsManager::Secret',
             Properties: {
                 Description: cf.join([cf.stackName, ' TAK Intermediate Signing Cert']),
-                Name: cf.join([cf.stackName, '/tak-root-ca']),
+                Name: cf.join([cf.stackName, '/tak-int-ca']),
                 KmsKeyId: cf.ref('KMS')
             }
         },
