@@ -59,7 +59,7 @@ export default {
                 Name: cf.join([cf.stackName, '/tak-admin-cert']),
                 KmsKeyId: cf.ref('KMS')
             }
-        },
+        }
     },
     Outputs: {
         KMS: {
