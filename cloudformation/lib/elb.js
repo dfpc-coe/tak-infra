@@ -53,14 +53,6 @@ export default {
                 RetentionInDays: 7
             }
         },
-        TAKAdminP12Secret: {
-            Type: 'AWS::SecretsManager::Secret',
-            Properties: {
-                Description: cf.join([cf.stackName, ' TAK Server Admin key (p12)']),
-                Name: cf.join([cf.stackName, '/tak-admin-cert']),
-                KmsKeyId: cf.ref('KMS')
-            }
-        },
         ELB: {
             Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer',
             Properties: {
