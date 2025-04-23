@@ -76,7 +76,7 @@ export default {
                 Engine: 'aurora-postgresql',
                 Port: '5432',
                 ServerlessV2ScalingConfiguration: {
-                    MinCapacity: '1',
+                    MinCapacity: '0',
                     MaxCapacity: '8',
                 },
                 DatabaseName: 'tak_ps_etl',
