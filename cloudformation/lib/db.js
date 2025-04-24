@@ -15,6 +15,12 @@ export default {
             Description: 'PostgreSQL database engine version',
             Type: 'String',
             Default: '17.4'
+        },
+        DatabaseMultiAZ: {
+            Description: 'PostgreSQL database as a Multi-AZ deployment',
+            Type: 'String',
+            AllowedValues: ['true', 'false'],
+            Default: 'false'
         }
     },
     Resources: {
@@ -76,6 +82,7 @@ export default {
                 StorageEncrypted: true,
                 MasterUsername: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}'),
                 MasterUserPassword: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}'),
+                MultiAZ: cf.ref('DatabaseMultiAZ'),
                 PreferredMaintenanceWindow: 'Sun:23:00-Sun:23:30',
                 PreferredBackupWindow: '22:00-23:00',
                 EnablePerformanceInsights: true,
