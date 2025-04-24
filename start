@@ -23,13 +23,47 @@ else
     cp /etc/cron.d/certbot /etc/letsencrypt/certbot.cron || true
 fi
 
-# Check if TAK certs exist, otherwise generate them
 cd /opt/tak/certs
-if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
-    echo "ok - TAK Server - Generating new certificates"
+
+mkdir -p "/opt/tak/certs/files/${HostedDomain}/" || true
+
+echo "ok - Root CA - Checking for AWS Secrets Manager Secret"
+ROOT_CA_PUBLIC=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-cotak-staging/root-ca/public 2> /dev/null || "")
+ROOT_CA_PUBLIC_TRUSTED=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-cotak-staging/root-ca/public-trusted 2> /dev/null || "")
+ROOT_CA_PRIVATE=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-cotak-staging/root-ca/private 2> /dev/null || "")
+ROOT_CA_REVOKE=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-cotak-staging/root-ca/revoke 2> /dev/null || "")
+
+# TODO What if one is present and another isn't?! Throw an error? get the server up with new certs and don't replace the secrets?
+if [[ -n ${ROOT_CA} ]]; then
+    echo "ok - Root CA - Found in AWS Secrets Manager"
+    echo "${ROOT_CA_PUBLIC}" > "/opt/tak/certs/files/ca.pem"
+    echo "${ROOT_CA_PUBLIC_TRUSTED}" > "/opt/tak/certs/files/ca-trusted.pem"
+    echo "${ROOT_CA_PRIVATE}" > "/opt/tak/certs/files/ca-do-not-share.key"
+    echo "${ROOT_CA_REVOKE}" > "/opt/tak/certs/files/ca.crl"
+else
+    echo "ok - Root CA - Generating New Certificate"
     /opt/tak/certs/cert-metadata.sh
-    mkdir -p "/opt/tak/certs/files/${HostedDomain}/"
     /opt/tak/certs/makeRootCa.sh --ca-name ${StackName:-TAKServer}
+
+    aws secretsmanager put-secret-value \
+        --secret-id "${StackName}/root-ca/public" \
+        --secret-binary fileb://files/ca.pem|| true
+
+    aws secretsmanager put-secret-value \
+        --secret-id "${StackName}/root-ca/public-trusted" \
+        --secret-binary fileb://files/ca-trusted.pem|| true
+
+    aws secretsmanager put-secret-value \
+        --secret-id "${StackName}/root-ca/private" \
+        --secret-binary fileb://files/ca-do-not-share.key || true
+
+    aws secretsmanager put-secret-value \
+        --secret-id "${StackName}/root-ca/revoke" \
+        --secret-binary fileb://files/ca.crl || true
+fi
+
+# Check if TAK certs exist, otherwise generate them
+if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
     { yes || :; } | /opt/tak/certs/makeCert.sh ca intermediate-ca
     { yes || :; } | /opt/tak/certs/makeCert.sh server takserver
     { yes || :; } | /opt/tak/certs/makeCert.sh client admin
@@ -39,10 +73,11 @@ if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
         --secret-binary fileb://files/admin.p12 || true
 fi
 
+ROOT_CA_REVOKE=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-cotak-staging/root-ca/revoke 2> /dev/null || "")
+
 # Restore LetsEncrypt cert
 # If no previous LetsEncrypt certs exist, use the self-signed ones
 if [ ! -f "/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks" ]; then
-    mkdir /opt/tak/certs/files/${HostedDomain} || true
     if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
         # Previous LetsEncrypt cert exists, convert it
         echo "ok - TAK Server - Converting LetsEncrypt certs to TAK format"
@@ -65,8 +100,8 @@ if [ ! -f "/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks" ]; then
             -deststorepass "atakatak" \
             -destkeystore "/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks" \
             -srckeystore "/opt/tak/certs/files/${HostedDomain}/letsencrypt.p12" \
-            -srcstoretype "pkcs12" 
-    else 
+            -srcstoretype "pkcs12"
+    else
         # No previous LetsEncrypt cert exists, use the self-signed one
         echo "ok - TAK Server - Using self-signed certs instead of LetsEncrypt certs"
         cp /opt/tak/certs/files/takserver.jks /opt/tak/certs/files/${HostedDomain}/letsencrypt.jks || true

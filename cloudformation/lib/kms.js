@@ -36,11 +36,27 @@ export default {
                 KmsKeyId: cf.ref('KMS')
             }
         },
-        TAKRootCA: {
+        TAKRootCAPublic: {
             Type: 'AWS::SecretsManager::Secret',
             Properties: {
-                Description: cf.join([cf.stackName, ' TAK Root Cert']),
-                Name: cf.join([cf.stackName, '/tak-root-ca']),
+                Description: cf.join([cf.stackName, ' TAK Root CA Public Cert']),
+                Name: cf.join([cf.stackName, '/root-ca/public']),
+                KmsKeyId: cf.ref('KMS')
+            }
+        },
+        TAKRootCAPrviate: {
+            Type: 'AWS::SecretsManager::Secret',
+            Properties: {
+                Description: cf.join([cf.stackName, ' TAK Root CA Private Cert']),
+                Name: cf.join([cf.stackName, '/root-ca/private']),
+                KmsKeyId: cf.ref('KMS')
+            }
+        },
+        TAKRootCARevoke: {
+            Type: 'AWS::SecretsManager::Secret',
+            Properties: {
+                Description: cf.join([cf.stackName, ' TAK Root CA Revocation Cert']),
+                Name: cf.join([cf.stackName, '/root-ca/revoke']),
                 KmsKeyId: cf.ref('KMS')
             }
         },
