@@ -1,5 +1,17 @@
 import { Type } from '@sinclair/typebox';
 
+const NetworkConnector = Type.Object({
+    _attributes: Type.Object({
+        port: Type.Integer(),
+        _name: Type.String(),
+        clientAuth: Type.Optional(Type.Boolean()),
+        keystore: Type.String(),
+        keystoreFile: Type.String(),
+        keystorePass: Type.String(),
+        enableNonAdminUI: Type.Boolean()
+    })
+})
+
 export default Type.Object({
     Configuration: Type.Object({
         _attributes: Type.Object({
@@ -22,24 +34,14 @@ export default Type.Object({
                     coreVersion: Type.Integer(),
                 })
             }),
-            connector: Type.Array(Type.Object({
-                _attributes: Type.Object({
-                    port: Type.Integer(),
-                    _name: Type.String(),
-                    clientAuth: Type.Optional(Type.Boolean()),
-                    keystore: Type.String(),
-                    keystoreFile: Type.String(),
-                    keystorePass: Type.String(),
-                    enableNonAdminUI: Type.Boolean()
-                })
-            })),
+            connector: Type.Union([NetworkConnector, Type.Array(NetworkConnector)]),
             announce: Type.Object({
                 _attributes: Type.Object({})
             })
         }),
         auth: Type.Object({
             _attributes: Type.Object({
-                default: Type.String('ldap'),
+                default: Type.String(),
                 x509groups: Type.Boolean(),
                 x509addAnonymous: Type.Boolean(),
                 x509useGroupCache: Type.Boolean(),

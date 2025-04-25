@@ -1,13 +1,14 @@
-import fs from 'node:fs';
-import fsp from 'node:fs/promises';
-import SM from '@aws-sdk/client-secrets-manager';
+import * as fs from 'node:fs';
+import * as fsp from 'node:fs/promises';
+import * as SM from '@aws-sdk/client-secrets-manager';
+import TypeValidator from './lib/type.js';
 import { Static } from '@sinclair/typebox';
-import CoreConfigType from './lib/CoreConfigType.ts';
+import CoreConfigType from './lib/CoreConfigType.js';
 import { randomUUID } from 'node:crypto';
-import jks from 'jks-js';
+import { toPem } from 'jks-js';
 import { diff } from 'json-diff-ts';
-import $ from 'node:child_process';
-import xmljs from 'xml-js';
+import { execSync } from 'node:child_process';
+import * as xmljs from 'xml-js';
 
 for (const env of [
     'HostedDomain',
@@ -29,14 +30,14 @@ for (const env of [
 const Amazon_Root_Cert = await (await fetch('https://www.amazontrust.com/repository/AmazonRootCA1.pem')).text();
 await fsp.writeFile('/tmp/AmazonRootCA1.pem', Amazon_Root_Cert);
 
-$.execSync('yes | keytool -import -file /tmp/AmazonRootCA1.pem -alias AWS -deststoretype JKS -deststorepass INTENTIONALLY_NOT_SENSITIVE -keystore /tmp/AmazonRootCA1.jks', {
+execSync('yes | keytool -import -file /tmp/AmazonRootCA1.pem -alias AWS -deststoretype JKS -deststorepass INTENTIONALLY_NOT_SENSITIVE -keystore /tmp/AmazonRootCA1.jks', {
     stdio: 'inherit'
 });
 
 await fsp.copyFile('/tmp/AmazonRootCA1.jks', '/opt/tak/certs/files/aws-acm-root.jks');
 
 // See if there is an existing CoreConfig in the Secrets Manager
-const sm = new SM.Client({
+const sm = new SM.SecretsManagerClient({
     region: process.env.AWS_REGION || 'us-east-1'
 });
 
@@ -60,8 +61,18 @@ try {
     if (existingCoreConfig.SecretString) {
         // Ensure seperate objects are created as CoreConfig will be mutated if there are
         // Stack Config values that chage
-        RemoteCoreConfig = xmljs.xml2js(existingCoreConfig.SecretString, { compact: true });
-        CoreConfig = xmljs.xml2js(existingCoreConfig.SecretString, { compact: true });
+        RemoteCoreConfig = TypeValidator.type(
+            CoreConfigType,
+            xmljs.xml2js(existingCoreConfig.SecretString, { compact: true }),
+            {
+                clean: false,
+                verbose: true,
+                convert: true,
+                default: true
+            }
+        );
+
+        CoreConfig = structuredClone(RemoteCoreConfig);
     }
 } catch (err) {
     console.error(err);
@@ -290,8 +301,8 @@ if (!CoreConfig) {
 }
 
 if (CoreConfig.Configuration.network.connector) {
-    if (!CoreConfig.Configuration.network.connector) {
-        CoreConfig.Configuration.network.connector = [CoreConfig.Configuration.network.connector];
+    if (!Array.isArray(CoreConfig.Configuration.network.connector)) {
+        CoreConfig.Configuration.network.connector = [ CoreConfig.Configuration.network.connector];
     }
 
     for (const connector of CoreConfig.Configuration.network.connector) {
@@ -363,5 +374,5 @@ try {
 function validateKeystore(file, pass) {
     fs.accessSync(file);
     const jksBuffer = fs.readFileSync(file);
-    jks.toPem(jksBuffer, pass);
+    toPem(jksBuffer, pass);
 }

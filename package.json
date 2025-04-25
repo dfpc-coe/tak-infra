@@ -7,7 +7,7 @@
     "scripts": {
         "lint": "eslint CoreConfig.ts cloudformation/ lib/",
         "build": "node ./bin/build.js",
-        "check": "tsc --noEmit CoreConfig.ts",
+        "check": "tsc -t es2022 -m es2022 --moduleResolution node --noEmit CoreConfig.ts",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "engines": {
