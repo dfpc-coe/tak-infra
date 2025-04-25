@@ -34,7 +34,7 @@ ROOT_CA_PRIVATE=$(aws secretsmanager get-secret-value --secret-id coe-tak-networ
 ROOT_CA_REVOKE=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-cotak-staging/root-ca/revoke 2> /dev/null || "")
 
 # TODO What if one is present and another isn't?! Throw an error? get the server up with new certs and don't replace the secrets?
-if [[ -n ${ROOT_CA} ]]; then
+if [[ -n ${ROOT_CA_PUBLIC} ]] && [[ -n ${ROOT_CA_PUBLIC_TRUSTED} ]] && [[ -n ${ROOT_CA_PRIVATE} ]] && [[ -n ${ROOT_CA_REVOKE} ]]; then
     echo "ok - Root CA - Found in AWS Secrets Manager"
     echo "${ROOT_CA_PUBLIC}" > "/opt/tak/certs/files/ca.pem"
     echo "${ROOT_CA_PUBLIC_TRUSTED}" > "/opt/tak/certs/files/ca-trusted.pem"
