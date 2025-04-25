@@ -5,7 +5,7 @@
     "version": "2.1.0",
     "description": "CloudFormation managed infrastructure for TAK Server",
     "scripts": {
-        "lint": "eslint CoreConfig.ts cloudformation/ lib/",
+        "lint": "eslint CoreConfig.ts cloudformation/ src/",
         "build": "node ./bin/build.js",
         "check": "tsc -t es2022 -m es2022 --moduleResolution node --noEmit CoreConfig.ts",
         "test": "echo \"Error: no test specified\" && exit 1"

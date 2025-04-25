@@ -1,9 +1,9 @@
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as SM from '@aws-sdk/client-secrets-manager';
-import TypeValidator from './lib/type.js';
+import TypeValidator from './src/type.js';
 import { Static } from '@sinclair/typebox';
-import CoreConfigType from './lib/CoreConfigType.js';
+import CoreConfigType from './src/CoreConfigType.js';
 import { randomUUID } from 'node:crypto';
 import { toPem } from 'jks-js';
 import { diff } from 'json-diff-ts';
