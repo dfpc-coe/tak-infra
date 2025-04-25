@@ -5,8 +5,9 @@
     "version": "2.1.0",
     "description": "CloudFormation managed infrastructure for TAK Server",
     "scripts": {
-        "lint": "eslint cloudformation/ CoreConfig.js",
+        "lint": "eslint CoreConfig.ts cloudformation/ lib/",
         "build": "node ./bin/build.js",
+        "check": "tsc --noEmit CoreConfig.ts",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "engines": {
@@ -26,13 +27,18 @@
         "@aws-sdk/client-acm": "^3.782.0",
         "@aws-sdk/client-secrets-manager": "^3.782.0",
         "@openaddresses/cloudfriend": "^7.0.0",
+        "@sinclair/typebox": "^0.34.33",
         "jks-js": "^1.1.4",
+        "json-diff-ts": "^4.2.3",
         "tsx": "^4.19.3",
+        "typescript": "^5.8.3",
+        "typescript-eslint": "^8.31.0",
         "xml-js": "^1.6.11"
     },
     "devDependencies": {
         "@openaddresses/batch-alarms": "^4.1.0",
         "@openaddresses/deploy": "^9.0.0",
+        "@types/node": "^22.15.2",
         "eslint": "^9.1.1",
         "eslint-plugin-n": "^17.4.0"
     }
