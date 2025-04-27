@@ -421,13 +421,13 @@ export default {
                 DesiredCount: 1,
                 NetworkConfiguration: {
                     AwsvpcConfiguration: {
-                        AssignPublicIp: 'ENABLED',
+                        AssignPublicIp: 'DISABLED',
                         SecurityGroups: [
                             cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-service-sg']))
                         ],
                         Subnets:  [
-                            cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-a'])),
-                            cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-b']))
+                            cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-private-a'])),
+                            cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-private-b']))
                         ]
                     }
                 },
