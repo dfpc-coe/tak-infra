@@ -53,7 +53,7 @@ if [[ -n ${ROOT_CA_REVOKE} ]]; then
     echo "${ROOT_CA_REVOKE}" > "/opt/tak/certs/files/ca.crl"
 fi
 
-if [[ -n ${ROOT_CA_PUBLIC} ]] && [[ -n ${ROOT_CA_PUBLIC_TRUSTED} ]] && [[ -n ${ROOT_CA_PRIVATE} ]] && [[ -n ${ROOT_CA_REVOKE} ]]; then
+if [[ -z ${ROOT_CA_PUBLIC} ]] && [[ -z ${ROOT_CA_PUBLIC_TRUSTED} ]] && [[ -z ${ROOT_CA_PRIVATE} ]] && [[ -z ${ROOT_CA_REVOKE} ]]; then
     echo "ok - Root CA - Generating New Certificate"
     /opt/tak/certs/cert-metadata.sh
     /opt/tak/certs/makeRootCa.sh --ca-name ${StackName:-TAKServer}
