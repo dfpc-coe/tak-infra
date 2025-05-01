@@ -28,10 +28,10 @@ cd /opt/tak/certs
 mkdir -p "/opt/tak/certs/files/${HostedDomain}/" || true
 
 echo "ok - Root CA - Checking for AWS Secrets Manager Secret"
-ROOT_CA_PUBLIC=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-cotak-staging/root-ca/public 2> /dev/null || "")
-ROOT_CA_PUBLIC_TRUSTED=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-cotak-staging/root-ca/public-trusted 2> /dev/null || "")
-ROOT_CA_PRIVATE=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-cotak-staging/root-ca/private 2> /dev/null || "")
-ROOT_CA_REVOKE=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-cotak-staging/root-ca/revoke 2> /dev/null || "")
+ROOT_CA_PUBLIC=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-${Environment}/root-ca/public 2> /dev/null) || $(echo "")
+ROOT_CA_PUBLIC_TRUSTED=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-${Environment}/root-ca/public-trusted 2> /dev/null) || $(echo "")
+ROOT_CA_PRIVATE=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-${Environment}/root-ca/private 2> /dev/null) || $(echo "")
+ROOT_CA_REVOKE=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-${Environment}/root-ca/revoke 2> /dev/null) || $(echo "")
 
 # TODO What if one is present and another isn't?! Throw an error? get the server up with new certs and don't replace the secrets?
 if [[ -n ${ROOT_CA_PUBLIC} ]] && [[ -n ${ROOT_CA_PUBLIC_TRUSTED} ]] && [[ -n ${ROOT_CA_PRIVATE} ]] && [[ -n ${ROOT_CA_REVOKE} ]]; then
@@ -46,19 +46,19 @@ else
     /opt/tak/certs/makeRootCa.sh --ca-name ${StackName:-TAKServer}
 
     aws secretsmanager put-secret-value \
-        --secret-id "${StackName}/root-ca/public" \
+        --secret-id "coe-tak-network-${Environment}/root-ca/public" \
         --secret-binary fileb://files/ca.pem|| true
 
     aws secretsmanager put-secret-value \
-        --secret-id "${StackName}/root-ca/public-trusted" \
+        --secret-id "coe-tak-network-${Environment}/root-ca/public-trusted" \
         --secret-binary fileb://files/ca-trusted.pem|| true
 
     aws secretsmanager put-secret-value \
-        --secret-id "${StackName}/root-ca/private" \
+        --secret-id "coe-tak-network-${Environment}/root-ca/private" \
         --secret-binary fileb://files/ca-do-not-share.key || true
 
     aws secretsmanager put-secret-value \
-        --secret-id "${StackName}/root-ca/revoke" \
+        --secret-id "coe-tak-network-${Environment}/root-ca/revoke" \
         --secret-binary fileb://files/ca.crl || true
 fi
 
@@ -69,7 +69,7 @@ if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
     { yes || :; } | /opt/tak/certs/makeCert.sh client admin
 
     aws secretsmanager put-secret-value \
-        --secret-id ${StackName}/tak-admin-cert \
+        --secret-id coe-tak-network-${Environment}/tak-admin-cert \
         --secret-binary fileb://files/admin.p12 || true
 fi
 

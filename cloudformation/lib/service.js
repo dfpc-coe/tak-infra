@@ -247,6 +247,9 @@ export default {
                         Name: 'StackName',
                         Value: cf.stackName
                     },{
+                        Name: 'Environment',
+                        Value: cf.ref('Environment')
+                    },{
                         Name: 'HostedEmail',
                         Value: cf.ref('HostedEmail')
                     },{
