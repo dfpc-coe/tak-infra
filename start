@@ -33,14 +33,27 @@ ROOT_CA_PUBLIC_TRUSTED=$(aws secretsmanager get-secret-value --secret-id coe-tak
 ROOT_CA_PRIVATE=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-${Environment}/root-ca/private 2> /dev/null) || $(echo "")
 ROOT_CA_REVOKE=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-${Environment}/root-ca/revoke 2> /dev/null) || $(echo "")
 
-# TODO What if one is present and another isn't?! Throw an error? get the server up with new certs and don't replace the secrets?
-if [[ -n ${ROOT_CA_PUBLIC} ]] && [[ -n ${ROOT_CA_PUBLIC_TRUSTED} ]] && [[ -n ${ROOT_CA_PRIVATE} ]] && [[ -n ${ROOT_CA_REVOKE} ]]; then
+if [[ -n ${ROOT_CA_PUBLIC} ]]; then
     echo "ok - Root CA - Found in AWS Secrets Manager"
     echo "${ROOT_CA_PUBLIC}" > "/opt/tak/certs/files/ca.pem"
+fi
+
+if [[ -n ${ROOT_CA_PUBLIC_TRUSTED} ]]; then
+    echo "ok - Root CA Trusted - Found in AWS Secrets Manager"
     echo "${ROOT_CA_PUBLIC_TRUSTED}" > "/opt/tak/certs/files/ca-trusted.pem"
+fi
+
+if [[ -n ${ROOT_CA_PRIVATE} ]]; then
+    echo "ok - Root CA Private - Found in AWS Secrets Manager"
     echo "${ROOT_CA_PRIVATE}" > "/opt/tak/certs/files/ca-do-not-share.key"
+fi
+
+if [[ -n ${ROOT_CA_REVOKE} ]]; then
+    echo "ok - Root CA Revoke - Found in AWS Secrets Manager"
     echo "${ROOT_CA_REVOKE}" > "/opt/tak/certs/files/ca.crl"
-else
+fi
+
+if [[ -n ${ROOT_CA_PUBLIC} ]] && [[ -n ${ROOT_CA_PUBLIC_TRUSTED} ]] && [[ -n ${ROOT_CA_PRIVATE} ]] && [[ -n ${ROOT_CA_REVOKE} ]]; then
     echo "ok - Root CA - Generating New Certificate"
     /opt/tak/certs/cert-metadata.sh
     /opt/tak/certs/makeRootCa.sh --ca-name ${StackName:-TAKServer}
