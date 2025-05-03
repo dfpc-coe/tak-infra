@@ -130,7 +130,7 @@ fi
 
 echo "ok - TAK Server - Generating config file"
 cd /opt/tak
-node CoreConfig.js
+npx tsx CoreConfig.ts
 
 /opt/tak/validateConfig.sh /opt/tak/CoreConfig.xml
 

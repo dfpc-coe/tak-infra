@@ -347,7 +347,7 @@ export default {
                                 'secretsmanager:List*'
                             ],
                             Resource: [
-                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/*'])
+                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:coe-tak-network-', cf.ref('Environment'), '/*'])
                             ]
                         },{
                             Effect: 'Allow',
@@ -355,14 +355,13 @@ export default {
                                 'secretsmanager:Put*'
                             ],
                             Resource: [
-                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/tak-admin-cert']),
+                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:coe-tak-network-', cf.ref('Environment'), '/tak-admin-cert']),
 
-                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/core-config']),
+                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:coe-tak-network-', cf.ref('Environment'), '/core-config']),
 
-                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/root-ca/public']),
-                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/root-ca/public-trusted']),
-                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/root-ca/private']),
-                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/root-ca/revoke'])
+                                // This is a wildcard as the generated ARN is occasionally prefixed with a random hash
+                                // IE: coe-tak-network-cotak-staging/root-ca/revoke-m43Ei7
+                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:coe-tak-network-', cf.ref('Environment'), '/root-ca/*']),
                             ]
                         },{
                             Effect: 'Allow',
