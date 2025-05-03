@@ -1,7 +1,5 @@
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
-import * as SM from '@aws-sdk/client-secrets-manager';
-import TypeValidator from './src/type.js';
 import { Static } from '@sinclair/typebox';
 import CoreConfigType from './src/CoreConfigType.js';
 import { randomUUID } from 'node:crypto';
@@ -36,11 +34,6 @@ execSync('yes | keytool -import -file /tmp/AmazonRootCA1.pem -alias AWS -deststo
 
 await fsp.copyFile('/tmp/AmazonRootCA1.jks', '/opt/tak/certs/files/aws-acm-root.jks');
 
-// See if there is an existing CoreConfig in the Secrets Manager
-const sm = new SM.SecretsManagerClient({
-    region: process.env.AWS_REGION || 'us-east-1'
-});
-
 const LDAP_DN = process.env.LDAP_Domain.split('.').map((part) => {
     return `dc=${part}`;
 }).join(',');
@@ -50,15 +43,11 @@ const Certificate = {
     OU: process.env.ORGANIZATIONAL_UNIT || 'COTAK-Staging'
 };
 
-let RemoteCoreConfig: Static<typeof CoreConfigType> | null = null;
+const RemoteCoreConfig: Static<typeof CoreConfigType> | null = null;
 let CoreConfig: Static<typeof CoreConfigType> | null = null;
 
-try {
-    const existingCoreConfig = await sm.send(new SM.GetSecretValueCommand({
-        SecretId: `coe-tak-network-${process.env.Environment}/core-config`
-    }));
-
-    if (existingCoreConfig.SecretString) {
+/* TODO Remote Core Config
+    try {
         // Ensure seperate objects are created as CoreConfig will be mutated if there are
         // Stack Config values that chage
         RemoteCoreConfig = TypeValidator.type(
@@ -73,10 +62,10 @@ try {
         );
 
         CoreConfig = structuredClone(RemoteCoreConfig);
+    } catch (err) {
+        console.error(err);
     }
-} catch (err) {
-    console.error(err);
-}
+*/
 
 if (!CoreConfig) {
     CoreConfig = {
@@ -359,11 +348,7 @@ try {
     const diffs = diff(RemoteCoreConfig, CoreConfig);
 
     if (diffs.length > 0) {
-        console.log('ok - CoreConfig changes detected - saving to AWS SecretsManager');
-        await sm.send(new SM.PutSecretValueCommand({
-            SecretId: `coe-tak-network-${process.env.Environment}/core-config`,
-            SecretString: xml
-        }));
+        console.log('ok - Change detected');
     } else {
         console.log('ok - No change detected');
     }
