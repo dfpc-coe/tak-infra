@@ -54,9 +54,13 @@ if [[ -n ${ROOT_CA_REVOKE} ]]; then
 fi
 
 if [[ -z ${ROOT_CA_PUBLIC} ]] && [[ -z ${ROOT_CA_PUBLIC_TRUSTED} ]] && [[ -z ${ROOT_CA_PRIVATE} ]] && [[ -z ${ROOT_CA_REVOKE} ]]; then
-    echo "ok - Root CA - Generating New Certificate"
-    /opt/tak/certs/cert-metadata.sh
-    /opt/tak/certs/makeRootCa.sh --ca-name ${StackName:-TAKServer}
+    if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
+        echo "ok - Root CA - Does not exist - Generating New Certificate"
+        /opt/tak/certs/cert-metadata.sh
+        /opt/tak/certs/makeRootCa.sh --ca-name ${StackName:-TAKServer}
+    else
+        echo "ok - Root CA - Exists"
+    fi
 
     aws secretsmanager put-secret-value \
         --secret-id "coe-tak-network-${Environment}/root-ca/public" \
