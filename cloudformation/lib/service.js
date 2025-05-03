@@ -357,8 +357,6 @@ export default {
                             Resource: [
                                 cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:coe-tak-network-', cf.ref('Environment'), '/tak-admin-cert']),
 
-                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:coe-tak-network-', cf.ref('Environment'), '/core-config']),
-
                                 // This is a wildcard as the generated ARN is occasionally prefixed with a random hash
                                 // IE: coe-tak-network-cotak-staging/root-ca/revoke-m43Ei7
                                 cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:coe-tak-network-', cf.ref('Environment'), '/root-ca/*']),

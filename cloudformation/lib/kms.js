@@ -28,14 +28,6 @@ export default {
                 }
             }
         },
-        TAKCoreConfig: {
-            Type: 'AWS::SecretsManager::Secret',
-            Properties: {
-                Description: cf.join([cf.stackName, ' TAK Server CoreConfig']),
-                Name: cf.join([cf.stackName, '/core-config']),
-                KmsKeyId: cf.ref('KMS')
-            }
-        },
         TAKRootCAPublic: {
             Type: 'AWS::SecretsManager::Secret',
             Properties: {
