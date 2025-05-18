@@ -1,18 +1,17 @@
 {
     "name": "coe-tak",
-    "profile": "coegc",
-    "region": "us-gov-east-1",
+    "profile": "coe",
+    "region": "ap-southeast-2",
     "tags": [
         {
             "Key": "Project",
-            "Value": "tak"
+            "Value": "tak-infra"
         },
         "Owner",
         "Client"
     ],
     "artifacts": {
         "docker": [
-            "coe-ecr-tak:{{gitsha}}"
         ]
     }
 }

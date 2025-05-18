@@ -6,7 +6,7 @@ export default {
             Description: 'ELB IP Address Type - IPv4-only or IPv4/IPv6-Dualstack',
             Type: 'String',
             AllowedValues: ['ipv4', 'dualstack'],
-            Default: 'ipv4'
+            Default: 'dualstack'
         }
     },
     Resources: {
@@ -18,7 +18,7 @@ export default {
                     Value: cf.join('-', [cf.stackName, 'ecs-sg'])
                 }],
                 GroupDescription: 'Allow access to TAK ports',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-vpc-id'])),
                 SecurityGroupIngress: [{
                     Description: 'ELB Traffic',
                     SourceSecurityGroupId: cf.ref('ELBSecurityGroup'),
@@ -53,14 +53,6 @@ export default {
                 RetentionInDays: 7
             }
         },
-        TAKAdminP12Secret: {
-            Type: 'AWS::SecretsManager::Secret',
-            Properties: {
-                Description: cf.join([cf.stackName, ' TAK Server Admin key (p12)']),
-                Name: cf.join([cf.stackName, '/tak-admin-cert']),
-                KmsKeyId: cf.ref('KMS')
-            }
-        },
         ELB: {
             Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer',
             Properties: {
@@ -69,8 +61,8 @@ export default {
                 IpAddressType: cf.ref('IpAddressType'),
                 SecurityGroups: [cf.ref('ELBSecurityGroup')],
                 Subnets:  [
-                    cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-a'])),
-                    cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-b']))
+                    cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-subnet-public-a'])),
+                    cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-subnet-public-b']))
                 ]
             }
 
@@ -109,13 +101,13 @@ export default {
                     FromPort: 8089,
                     ToPort: 8089
                 }],
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
+                VpcId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-vpc-id']))
             }
         }
     },
     Outputs: {
         ServiceSG: {
-            Description: 'TAK Service SG',
+            Description: 'TAK Service Security Group',
             Export: {
                 Name: cf.join([cf.stackName, '-service-sg'])
             },

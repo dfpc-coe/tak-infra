@@ -1,0 +1,108 @@
+#!/bin/bash
+#
+# Build CoreConfig & Associated Cert Generation
+#
+
+. $NVM_DIR/nvm.sh
+
+set -euo pipefail
+
+echo "ok - TAK Server - New ECS Task starting..."
+echo "ok - NodeJS - Version: $(node --version)"
+
+# Ensure TAK certs Directory is present
+if [ -d "/opt/tak/certs/files/" ]; then
+    mkdir -p "/opt/tak/certs/files/"
+fi
+
+# Attempt to restore Certbot Cronjob or save it, if it exists
+echo "ok - Certbot - Restoring cronjob"
+if [ ! -e "/etc/cron.d/certbot" ]; then
+    cp /etc/letsencrypt/certbot.cron /etc/cron.d/certbot || true
+else
+    cp /etc/cron.d/certbot /etc/letsencrypt/certbot.cron || true
+fi
+
+# Check if TAK certs exist, otherwise generate them
+cd /opt/tak/certs
+if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
+    echo "ok - TAK Server - Generating new certificates"
+    echo "ok - TAK Server - CA Country: ${TAKSERVER_CACert_Country:=NZ}"
+    echo "ok - TAK Server - CA State: ${TAKSERVER_CACert_State:=Wellington}"
+    echo "ok - TAK Server - CA City: ${TAKSERVER_CACert_City:=Wellington}"
+    echo "ok - TAK Server - CA Organization: ${TAKSERVER_CACert_Org:=TAK.NZ}"
+    echo "ok - TAK Server - CA Organizational Unit: ${TAKSERVER_CACert_OrgUnit:=TAK.NZ Operations}" 
+    /opt/tak/certs/cert-metadata.sh
+    mkdir -p "/opt/tak/certs/files/${TAKSERVER_QuickConnect_LetsEncrypt_Domain:=nodomainset}/"
+    /opt/tak/certs/makeRootCa.sh --ca-name ${TAKSERVER_CACert_Org}
+    { yes || :; } | /opt/tak/certs/makeCert.sh ca intermediate-ca
+    { yes || :; } | /opt/tak/certs/makeCert.sh server takserver
+    { yes || :; } | /opt/tak/certs/makeCert.sh client admin
+
+    aws secretsmanager put-secret-value \
+        --secret-id ${StackName}/tak-admin-cert \
+        --secret-binary fileb://files/admin.p12 || true
+fi
+
+# Restore certs for self-enrollment (HTTPS on TCP/8446)
+# Check if certs for self-enrollment (HTTPS on TCP/8446) exist
+mkdir /opt/tak/certs/files/${TAKSERVER_QuickConnect_LetsEncrypt_Domain} || true
+if [ -d "/etc/letsencrypt/live/${TAKSERVER_QuickConnect_LetsEncrypt_Domain}" ]; then
+    # Previous LetsEncrypt cert exists, convert it to JKS format
+    echo "ok - TAK Server - Converting LetsEncrypt certs to TAK format"
+    openssl x509 \
+        -text \
+        -in "/etc/letsencrypt/live/${TAKSERVER_QuickConnect_LetsEncrypt_Domain}/fullchain.pem" \
+        -noout
+
+    openssl pkcs12 \
+        -export \
+        -in "/etc/letsencrypt/live/${TAKSERVER_QuickConnect_LetsEncrypt_Domain}/fullchain.pem" \
+        -inkey "/etc/letsencrypt/live/${TAKSERVER_QuickConnect_LetsEncrypt_Domain}/privkey.pem" \
+        -out "/opt/tak/certs/files/${TAKSERVER_QuickConnect_LetsEncrypt_Domain}/letsencrypt.p12" \
+        -name "${TAKSERVER_QuickConnect_LetsEncrypt_Domain}" \
+        -password "pass:atakatak"
+
+    { yes || :; } | keytool \
+        -importkeystore \
+        -srcstorepass "atakatak" \
+        -deststorepass "atakatak" \
+        -destkeystore "/opt/tak/certs/files/${TAKSERVER_QuickConnect_LetsEncrypt_Domain}/letsencrypt.jks" \
+        -srckeystore "/opt/tak/certs/files/${TAKSERVER_QuickConnect_LetsEncrypt_Domain}/letsencrypt.p12" \
+        -srcstoretype "pkcs12" 
+else 
+    # No previous LetsEncrypt cert exists, use the self-signed one instead
+    echo "ok - TAK Server - Using self-signed certs instead of LetsEncrypt certs"
+    cp /opt/tak/certs/files/takserver.jks /opt/tak/certs/files/${TAKSERVER_QuickConnect_LetsEncrypt_Domain}/letsencrypt.jks || true
+fi
+
+
+# Request LetsEncrypt certs in background
+/opt/tak/scripts/letsencrypt-request-cert.sh &
+
+echo "ok - TAK Server - Generating config file"
+cd /opt/tak
+npx tsx /opt/tak/scripts/CoreConfig.ts
+
+/opt/tak/validateConfig.sh /opt/tak/CoreConfig.xml
+
+echo "ok - TAK Server - Validate DB schema"
+java -jar /opt/tak/db-utils/SchemaManager.jar validate
+java -jar /opt/tak/db-utils/SchemaManager.jar upgrade
+
+echo "ok - TAK Server - Starting server"
+/opt/tak/configureInDocker.sh init &
+
+echo "ok - TAK Server - Starting to elevate admin user privileges..."
+SetAdminCommand="java -jar /opt/tak/utils/UserManager.jar certmod -A /opt/tak/certs/files/admin.pem"
+while ! $SetAdminCommand; do
+   echo "not ok - TAK Server - Elevating admin user privileges failed, retrying in 10 seconds..."
+   sleep 10
+done
+echo "ok - TAK Server - Elevating admin user privileges succeeded"
+
+echo "ok - TAK Server - New ECS Task successfully started"
+
+# Run cron in foreground
+echo "ok - Certbot - Starting cron for certbot renewals"
+/usr/sbin/cron -f

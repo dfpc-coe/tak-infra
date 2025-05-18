@@ -1,34 +1,13 @@
 services:
-    api:
+    takserver:
         platform: linux/amd64
         image: takserver
-        build: .
-        restart: 'always'
-        links:
-            - postgis
-        ports:
-            - "8443:8443"
-            - "8444:8444"
-            - "8446:8446"
-            - "8089:8089"
-        environment:
-            - "StackName=localstack"
-            - "HostedDomain=cotak-labs.org"
-            - "HostedEmail=nicholas.ingalls@state.co.us"
-            - "PostgresURL=postgresql://postgis:5432/gis"
-            - "PostgresUsername=docker"
-            - "PostgresPassword=docker"
-        volumes:
-            - ./tak-data/:/opt/tak/
-
-
-    postgis:
+        build:
+            context: .
+            dockerfile: ./docker/amd64/Dockerfile.takserver
+    takserver-tak-nz:
         platform: linux/amd64
-        image: postgis/postgis:17-3.4-alpine
-        restart: 'always'
-        ports:
-            - 5433:5432
-        environment:
-            - POSTGRES_DB=gis
-            - POSTGRES_USER=docker
-            - POSTGRES_PASSWORD=docker
+        image: takserver
+        build:
+            context: .
+            dockerfile: ./docker/amd64/Dockerfile.takserver-tak-nz

@@ -2,15 +2,6 @@ import cf from '@openaddresses/cloudfriend';
 
 export default {
     Parameters: {
-        DatabaseType: {
-            Type: 'String',
-            Default: 'db.t3.micro',
-            Description: 'Database size to create',
-            AllowedValues: [
-                'db.t3.micro',
-                'db.m6g.large'
-            ]
-        },
         DatabaseVersion: {
             Description: 'PostgreSQL database engine version',
             Type: 'String',
@@ -26,18 +17,18 @@ export default {
                     SecretStringTemplate: '{"username": "tak"}',
                     GenerateStringKey: 'password',
                     ExcludePunctuation: true,
-                    PasswordLength: 32
+                    PasswordLength: 64
                 },
                 Name: cf.join([cf.stackName, '/rds/secret']),
-                KmsKeyId: cf.ref('KMS')
+                KmsKeyId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-kms']))
             }
         },
         DBMasterSecretAttachment: {
             Type: 'AWS::SecretsManager::SecretTargetAttachment',
             Properties: {
                 SecretId: cf.ref('DBMasterSecret'),
-                TargetId: cf.ref('DBInstance'),
-                TargetType: 'AWS::RDS::DBInstance'
+                TargetId: cf.ref('DBCluster'),
+                TargetType: 'AWS::RDS::DBCluster'
             }
         },
         DBMonitoringRole: {
@@ -60,36 +51,67 @@ export default {
                 Path: '/'
             }
         },
-        DBInstance: {
+        DBCluster: {
+            Type: 'AWS::RDS::DBCluster',
+            DependsOn: ['DBMasterSecret'],
+            DeletionPolicy: 'Snapshot',
+            UpdateReplacePolicy: 'Snapshot',
+            Properties: {
+                Engine: 'aurora-postgresql',
+                Port: '5432',
+                ServerlessV2ScalingConfiguration: {
+                    MinCapacity: '0.5',
+                    MaxCapacity: '4'
+                },
+                DatabaseName: 'takserver',
+                CopyTagsToSnapshot: true,
+                KmsKeyId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-kms'])),
+                EngineVersion: cf.ref('DatabaseVersion'),
+                StorageEncrypted: 'true',
+                MasterUsername: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}'),
+                MasterUserPassword: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}'),
+                // PreferredMaintenanceWindow: 'Sun:23:00-Sun:23:30',
+                // PreferredBackupWindow: '22:00-23:00',
+                BackupRetentionPeriod: 10,
+                StorageType: 'aurora',
+                VpcSecurityGroupIds: [cf.ref('DBVPCSecurityGroup')],
+                DBSubnetGroupName: cf.ref('DBSubnet'),
+                DeletionProtection: cf.if('CreateProdResources', true, false)
+            }
+        },
+        DBFirstInstance: {
             Type: 'AWS::RDS::DBInstance',
             DependsOn: ['DBMasterSecret'],
             Properties: {
-                Engine: 'postgres',
+                DBClusterIdentifier: cf.ref('DBCluster'),
+                Engine: 'aurora-postgresql',
+                EngineVersion: cf.ref('DatabaseVersion'),
                 AllowMajorVersionUpgrade: false,
-                DBName: 'tak_ps_etl',
-                CopyTagsToSnapshot: true,
-                DBInstanceIdentifier: cf.stackName,
+                DBInstanceIdentifier: cf.join([cf.stackName, '-primary']),
                 MonitoringInterval: 60,
                 MonitoringRoleArn: cf.getAtt('DBMonitoringRole', 'Arn'),
-                KmsKeyId: cf.ref('KMS'),
-                EngineVersion: cf.ref('DatabaseVersion'),
-                StorageEncrypted: true,
-                MasterUsername: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}'),
-                MasterUserPassword: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}'),
-                PreferredMaintenanceWindow: 'Sun:23:00-Sun:23:30',
-                PreferredBackupWindow: '22:00-23:00',
-                EnablePerformanceInsights: true,
-                PerformanceInsightsKMSKeyId: cf.ref('KMS'),
+                EnablePerformanceInsights: 'true',
+                PerformanceInsightsKMSKeyId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-kms'])),
                 PerformanceInsightsRetentionPeriod: 7,
-                AllocatedStorage: 200,
-                MaxAllocatedStorage: 200,
-                BackupRetentionPeriod: 10,
-                StorageType: 'gp2',
-                DBInstanceClass: cf.ref('DatabaseType'),
-                VPCSecurityGroups: [cf.ref('DBVPCSecurityGroup')],
-                DBSubnetGroupName: cf.ref('DBSubnet'),
-                PubliclyAccessible: false,
-                DeletionProtection: true
+                DBInstanceClass: cf.if('CreateProdResources', 'db.t4g.large', 'db.serverless')
+            }
+        },
+        DBSecondInstance: {
+            Type: 'AWS::RDS::DBInstance',
+            Condition: 'CreateProdResources',
+            DependsOn: ['DBMasterSecret'],
+            Properties: {
+                DBClusterIdentifier: cf.ref('DBCluster'),
+                Engine: 'aurora-postgresql',
+                EngineVersion: cf.ref('DatabaseVersion'),
+                AllowMajorVersionUpgrade: false,
+                DBInstanceIdentifier: cf.join([cf.stackName, '-secondary']),
+                MonitoringInterval: 60,
+                MonitoringRoleArn: cf.getAtt('DBMonitoringRole', 'Arn'),
+                EnablePerformanceInsights: 'true',
+                PerformanceInsightsKMSKeyId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-kms'])),
+                PerformanceInsightsRetentionPeriod: 7,
+                DBInstanceClass: 'db.t4g.large'
             }
         },
         DBSubnet: {
@@ -97,8 +119,8 @@ export default {
             Properties: {
                 DBSubnetGroupDescription: cf.join('-', [cf.stackName, 'rds-subnets']),
                 SubnetIds: [
-                    cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-private-a'])),
-                    cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-private-b']))
+                    cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-subnet-private-a'])),
+                    cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-subnet-private-b']))
                 ]
             }
         },
@@ -111,7 +133,7 @@ export default {
                 }],
                 GroupName: cf.join('-', [cf.stackName, 'rds-sg']),
                 GroupDescription: 'Allow RDS Database Ingress',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-vpc-id'])),
                 SecurityGroupIngress: [{
                     IpProtocol: '-1',
                     FromPort: 5432,
@@ -121,25 +143,23 @@ export default {
             }
         }
     },
+     Conditions: {
+        CreateProdResources: cf.equals(cf.ref('EnvType'), 'prod')
+    },
     Outputs: {
         DBEndpoint: {
             Description: 'RDS Database Endpoint',
             Export: {
                 Name: cf.join([cf.stackName, '-db-endpoint'])
             },
-            Value: cf.getAtt('DBInstance', 'Endpoint.Address')
+            Value: cf.getAtt('DBCluster', 'Endpoint.Address')
         },
-        DB: {
-            Description: 'Postgres Connection String',
-            Value: cf.join([
-                'postgresql://',
-                cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}'),
-                ':',
-                cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}'),
-                '@',
-                cf.getAtt('DBInstance', 'Endpoint.Address'),
-                ':5432/tak_ps_etl'
-            ])
+        DBMasterSecretARN: {
+            Description: 'ARN for LDAP Service Password',
+            Export: {
+                Name: cf.join([cf.stackName, '-ldapservice-password'])
+            },
+            Value: cf.ref('DBMasterSecret')
         }
     }
 };

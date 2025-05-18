@@ -1,69 +1,89 @@
-import fs from 'node:fs/promises';
-import CP from 'child_process';
+import { exec, spawnSync } from 'child_process';
 
-process.env.GITSHA = sha();
+await accountSetup();
 
-process.env.Environment = process.env.Environment || 'prod';
-process.env.AWS_PROFILE = process.env.AWS_PROFILE || 'default';
+await ecrLogin(global.region, global.account, global.profile)
 
-for (const env of [
-    'GITSHA',
-    'AWS_REGION',
-    'AWS_ACCOUNT_ID',
-    'AWS_PROFILE',
-    'Environment',
-]) {
-    if (!process.env[env]) {
-        console.error(`${env} Env Var must be set`);
-        process.exit();
+await buildPushDockerContainer(global.region, global.account, global.environment, global.gitsha, 'takserver', global.brand)
+
+function accountSetup() {
+    console.log('ok - Determining AWS account and deployment environment setup')
+    global.profile = getAWSProfile();
+    global.region = getAWSRegion(profile);
+    global.account = getAWSAccount(profile);
+    global.gitsha = getGitSha();
+    global.environment = getStackEnv();
+    global.brand = getBrand();
+
+    console.log('AWS Profile:', global.profile);
+    console.log('AWS Region:', global.region);
+    console.log('AWS Account:', global.account);
+    console.log('GitSHA:', global.gitsha);
+    console.log('Environment:', global.environment);
+    console.log('Brand:', global.brand);
+}
+
+function getBrand() {
+    // Checks for --brand and if it has a value
+    const brandIndex = process.argv.indexOf('--brand');
+    let brandValue;
+  
+    if (brandIndex > -1) {
+        // Retrieve the value after --brand
+        brandValue = process.argv[brandIndex + 1];
     }
+    const brand = (brandValue || 'default');
+    return brand;
 }
 
-await login();
-console.error('ok - building containers');
-await tak();
-
-function login() {
-    console.error('ok - logging in')
-
-    return new Promise((resolve, reject) => {
-        const $ = CP.exec(`
-            aws ecr get-login-password \
-                --region $\{AWS_REGION\} \
-                --profile $\{AWS_PROFILE\} \
-            | docker login \
-                --username AWS \
-                --password-stdin "$\{AWS_ACCOUNT_ID\}.dkr.ecr.$\{AWS_REGION\}.amazonaws.com"
-
-        `, (err) => {
-            if (err) return reject(err);
-            return resolve();
-        });
-
-        $.stdout.pipe(process.stdout);
-        $.stderr.pipe(process.stderr);
-    });
-
+function getAWSProfile() {
+    // Checks for --profile and if it has a value
+    const profileIndex = process.argv.indexOf('--profile');
+    let profileValue;
+  
+    if (profileIndex > -1) {
+        // Retrieve the value after --profile
+        profileValue = process.argv[profileIndex + 1];
+    }
+    const profile = (profileValue || 'default');
+    return profile;
 }
 
-function tak() {
-    return new Promise((resolve, reject) => {
-        const $ = CP.exec(`
-            docker compose build api \
-            && docker tag takserver:latest "$\{AWS_ACCOUNT_ID\}.dkr.ecr.$\{AWS_REGION\}.amazonaws.com/coe-ecr-tak:$\{GITSHA\}" \
-            && docker push "$\{AWS_ACCOUNT_ID\}.dkr.ecr.$\{AWS_REGION\}.amazonaws.com/coe-ecr-tak:$\{GITSHA\}"
-        `, (err) => {
-            if (err) return reject(err);
-            return resolve();
-        });
-
-        $.stdout.pipe(process.stdout);
-        $.stderr.pipe(process.stderr);
-    });
+function getStackEnv() {
+    // Checks for --env and if it has a value
+    const envIndex = process.argv.indexOf('--env');
+    let envValue;
+  
+    if (envIndex > -1) {
+        // Retrieve the value after --env
+        envValue = process.argv[envIndex + 1];
+    } else {
+        console.error('Environment parameter unset. Add "--env" with desired environment parameter.');
+        process.exit(1);
+    }
+    return envValue;
 }
 
-function sha() {
-    const git = CP.spawnSync('git', [
+function getAWSRegion(profile) {
+    const aws = spawnSync('aws', [
+        'configure', 'get', 'region', '--profile', profile
+    ]);
+
+    if (!aws.stdout) throw Error('Unable to determine default AWS region. Run "aws configure" for setup.');
+    return String(aws.stdout).replace(/\n/g, '');
+}
+
+function getAWSAccount(profile) {
+    const aws = spawnSync('aws', [
+        'sts', 'get-caller-identity', '--query', 'Account', '--output', 'text', '--profile', profile
+    ]);
+
+    if (!aws.stdout) throw Error('Unable to determine your AWS account. Run "aws configure" for setup.');
+    return String(aws.stdout).replace(/\n/g, '');
+}
+
+function getGitSha() {
+    const git = spawnSync('git', [
         '--git-dir', new URL('../.git', import.meta.url).pathname,
         'rev-parse', 'HEAD'
     ]);
@@ -71,4 +91,47 @@ function sha() {
     if (!git.stdout) throw Error('Is this a git repo? Could not determine GitSha');
     return String(git.stdout).replace(/\n/g, '');
 
+}
+
+function ecrLogin(region, account, profile) {
+    console.log('ok - logging in')
+
+    const ecrPassword = 'aws ecr get-login-password --region ' + region + ' --profile ' + profile;
+    const dockerLogin = 'docker login --username AWS --password-stdin "' + account + '.dkr.ecr.' + region + '.amazonaws.com"';
+    const Command = ecrPassword + ' | ' + dockerLogin;
+    return new Promise((resolve, reject) => {
+        const $ = exec(Command, (err) => {
+            if (err) return reject(err);
+            return resolve();
+        });
+
+        $.stdout.pipe(process.stdout);
+        $.stderr.pipe(process.stderr);
+    });
+
+}
+
+function buildPushDockerContainer(region, account, environment, gitsha, image, brand) {
+    console.log('ok - building Docker image')
+
+    if (brand !== 'default' && brand !== '') {
+        var dockerComposeName = image + '-' + brand;
+    } else {
+        var dockerComposeName = image;
+    }
+    
+    const dockerCompose = 'docker compose build ' + dockerComposeName;
+    const dockerTag = 'docker tag ' + image + ':latest "' + account + '.dkr.ecr.' + region + '.amazonaws.com/coe-base-' + environment + ':' + image + '-' + gitsha + '"';
+    const dockerPush = 'docker push "' + account + '.dkr.ecr.' + region + '.amazonaws.com/coe-base-' + environment + ':' + image + '-' + gitsha + '"';
+    const Command = dockerCompose + ' && ' + dockerTag + ' && ' + dockerPush;
+
+    return new Promise((resolve, reject) => {
+        const $ = exec(Command, (err) => {
+            if (err) return reject(err);
+            return resolve();
+        });
+
+        $.stdout.pipe(process.stdout);
+        $.stderr.pipe(process.stderr);
+    });
 }

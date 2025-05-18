@@ -1,10 +1,10 @@
 import cf from '@openaddresses/cloudfriend';
-import Service from './lib/service.js';
+import TakServer from './lib/takserver.js';
 
 export default cf.merge(
-    Service,
+    TakServer,
     {
-        Description: 'ECS Service for @tak-ps/tak-infra',
+        Description: 'TAK Server Layer - TAK Server',
         Parameters: {
             GitSha: {
                 Description: 'GitSha that is currently being deployed',
@@ -13,6 +13,12 @@ export default cf.merge(
             Environment: {
                 Description: 'VPC/ECS Stack to deploy into',
                 Type: 'String',
+                Default: 'prod'
+            },
+            EnvType: {
+                Description: 'Environment type',
+                Type: 'String',
+                AllowedValues: ['prod', 'dev-test'],
                 Default: 'prod'
             }
         }
