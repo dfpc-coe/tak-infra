@@ -2,8 +2,8 @@
     "name": "@TAK-NZ/tak-infra",
     "type": "module",
     "private": true,
-    "version": "1.0.0",
-    "description": "TAK Server Layer",
+    "version": "2.2.0",
+    "description": "CloudFormation managed infrastructure for TAK Server",
     "scripts": {
         "lint": "eslint docker-container/scripts/CoreConfig.ts docker-container/scripts/src/ cloudformation/",
         "build": "node ./bin/build.js",

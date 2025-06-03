@@ -8,46 +8,6 @@ export default {
             AllowedValues: ['true', 'false'],
             Default: 'false'
         },
-//        CertificateCountry: {
-//            Description: '2 Letter Country Code',
-//            Type: 'String',
-//            Default: 'NZ'
-//        },
-//        CertificateState: {
-//            Description: 'Region or state name or code',
-//            Type: 'String',
-//            Default: 'Wellington'
-//        },
-//        CertificateCity: {
-//            Description: 'City Name',
-//            Type: 'String',
-//           Default: 'Wellington'
-//        },
-//        CertificateOrg: {
-//            Description: 'Organization',
-//            Type: 'String',
-//            Default: 'TAK-NZ'
-//        },
-//        CertificateOrgUnit: {
-//            Description: 'Organization Unit',
-//            Type: 'String',
-//            Default: 'TAK'
-//        },
-//        HostedDomain: {
-//            Description: 'Hosted Domain',
-//            Type: 'String',
-//            Default: 'ops.exampletak.com'
-//        },
-//        HostedEmail: {
-//            Description: 'Hosted Email',
-//            Type: 'String'
-//        },
-//        LetsencryptProdCert: {
-//            Description: 'Issue Let\'s Encrypt Production Certificate?',
-//            Type: 'String',
-//            AllowedValues: ['true', 'false'],
-//            Default: 'false'
-//        },
         LDAPDN: {
             Description: 'LDAP Base DN',
             Type: 'String',
@@ -462,13 +422,13 @@ export default {
                 DesiredCount: 1,
                 NetworkConfiguration: {
                     AwsvpcConfiguration: {
-                        AssignPublicIp: 'ENABLED',
+                        AssignPublicIp: 'DISABLED',
                         SecurityGroups: [
                             cf.importValue(cf.join(['coe-tak-base-', cf.ref('Environment'), '-service-sg']))
                         ],
                         Subnets:  [
-                            cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-subnet-public-a'])),
-                            cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-subnet-public-b']))
+                            cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-private-a'])),
+                            cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-private-b']))
                         ]
                     }
                 },

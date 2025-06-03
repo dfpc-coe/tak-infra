@@ -12,6 +12,11 @@
 
 ### Pending Release
 
+### v2.2.0
+
+- :rocket: Move ECS service from public to private subnet. As a result disable assignment of public IP for the task itself. External connectivity will be solely via the NLB - which is in the public subnet.
+
+
 ### v2.1.0
 
 - :rocket: Moves Let's Encrypt cert requests via certbot into an asynchronous script that does not block the Docker entrypoint.
