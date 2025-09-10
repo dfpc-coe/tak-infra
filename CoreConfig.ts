@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import { Static } from '@sinclair/typebox';
-import CoreConfigType from '/opt/tak/scripts/src/CoreConfigType.js';
+import CoreConfigType from './src/CoreConfigType.js';
 import { randomUUID } from 'node:crypto';
 import { toPem } from 'jks-js';
 import { diff } from 'json-diff-ts';
