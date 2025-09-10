@@ -4,10 +4,4 @@ services:
         image: takserver
         build:
             context: .
-            dockerfile: ./docker/amd64/Dockerfile.takserver
-    takserver-tak-nz:
-        platform: linux/amd64
-        image: takserver
-        build:
-            context: .
-            dockerfile: ./docker/amd64/Dockerfile.takserver-tak-nz
+            dockerfile: ./docker/Dockerfile.takserver
