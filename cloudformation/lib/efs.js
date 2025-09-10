@@ -5,18 +5,44 @@ export default {
         EFSFileSystem: {
             Type: 'AWS::EFS::FileSystem',
             Properties: {
-                Encrypted: true,
-                KmsKeyId: cf.ref('KMS'),
                 FileSystemTags: [{
                     Key: 'Name',
                     Value: cf.stackName
                 }],
-                PerformanceMode: 'generalPurpose'
+                Encrypted: true,
+                KmsKeyId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-kms'])),
+                PerformanceMode: 'generalPurpose',
+                ThroughputMode: 'bursting',
+                BackupPolicy: {
+                    Status: 'DISABLED'
+                }
+            }
+        },
+        EFSSecurityGroup: {
+            Type: 'AWS::EC2::SecurityGroup',
+            Properties: {
+                Tags: [{
+                    Key: 'Name',
+                    Value: cf.join('-', [cf.stackName, 'efs-sg'])
+                }],
+                GroupName: cf.join('-', [cf.stackName, 'efs-sg']),
+                GroupDescription: 'EFS to TAK ECS Service',
+                SecurityGroupIngress: [{
+                    IpProtocol: 'tcp',
+                    FromPort: 2049,
+                    ToPort: 2049,
+                    CidrIp: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-vpc-cidr-ipv4']))
+                }],
+                VpcId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-vpc-id']))
             }
         },
         EFSAccessPointTAK: {
             Type: 'AWS::EFS::AccessPoint',
             Properties: {
+                AccessPointTags: [{
+                    Key: 'Name',
+                    Value: cf.join('-', [cf.stackName, 'tak-certs-files'])
+                }],
                 FileSystemId: cf.ref('EFSFileSystem'),
                 PosixUser: {
                     Uid: 0,
@@ -35,6 +61,10 @@ export default {
         EFSAccessPointLetsEncrypt: {
             Type: 'AWS::EFS::AccessPoint',
             Properties: {
+                AccessPointTags: [{
+                    Key: 'Name',
+                    Value: cf.join('-', [cf.stackName, 'tak-letsencrypt'])
+                }],
                 FileSystemId: cf.ref('EFSFileSystem'),
                 PosixUser: {
                     Uid: 0,
@@ -54,7 +84,7 @@ export default {
             Type: 'AWS::EFS::MountTarget',
             Properties: {
                 FileSystemId: cf.ref('EFSFileSystem'),
-                SubnetId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-a'])),
+                SubnetId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-subnet-public-a'])),
                 SecurityGroups: [cf.ref('EFSSecurityGroup')]
             }
         },
@@ -62,25 +92,8 @@ export default {
             Type: 'AWS::EFS::MountTarget',
             Properties: {
                 FileSystemId: cf.ref('EFSFileSystem'),
-                SubnetId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-b'])),
+                SubnetId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-subnet-public-b'])),
                 SecurityGroups: [cf.ref('EFSSecurityGroup')]
-            }
-        },
-        EFSSecurityGroup: {
-            Type: 'AWS::EC2::SecurityGroup',
-            Properties: {
-                Tags: [{
-                    Key: 'Name',
-                    Value: cf.join('-', [cf.stackName, 'vpc'])
-                }],
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
-                GroupDescription: 'Allow EFS Access in Forum Task',
-                SecurityGroupIngress: [{
-                    IpProtocol: 'tcp',
-                    FromPort: 2049,
-                    ToPort: 2049,
-                    SourceSecurityGroupId: cf.ref('ServiceSecurityGroup')
-                }]
             }
         }
     },

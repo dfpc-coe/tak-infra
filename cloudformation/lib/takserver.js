@@ -8,54 +8,27 @@ export default {
             AllowedValues: ['true', 'false'],
             Default: 'false'
         },
-        CertificateCountry: {
-            Description: '2 Letter Country Code',
+        LDAPDN: {
+            Description: 'LDAP Base DN',
             Type: 'String',
-            Default: 'US'
-        },
-        CertificateState: {
-            Description: '2 Letter State Code',
-            Type: 'String',
-            Default: 'CO'
-        },
-        CertificateCity: {
-            Description: 'City Name',
-            Type: 'String',
-            Default: 'Grand-Junction'
-        },
-        CertificateOrg: {
-            Description: 'Organization',
-            Type: 'String',
-            Default: 'TAK'
-        },
-        CertificateOrgUnit: {
-            Description: 'Organization Unit',
-            Type: 'String',
-            Default: 'TAK-Unit'
-        },
-        HostedDomain: {
-            Description: 'Hosted Domain',
-            Type: 'String'
-        },
-        HostedEmail: {
-            Description: 'Hosted Email',
-            Type: 'String'
-        },
-        LetsencryptProdCert: {
-            Description: 'Issue Let\'s Encryp Production Certificate?',
-            Type: 'String',
-            AllowedValues: ['true', 'false'],
-            Default: 'false'
-        },
-        LDAPDomain: {
-            Description: 'LDAP Domain',
-            Type: 'String',
-            Default: 'example.com'
+            Default: 'DC=example,DC=com'
         },
         LDAPSecureUrl: {
             Description: 'LDAP Secure Connection URL',
             Type: 'String',
             Default: 'ldaps://example.com:636'
+        },
+        TAKConfigFile: {
+            Description: 'Use takserver-config.env config file in S3 bucket',
+            Type: 'String',
+            AllowedValues: ['true', 'false'],
+            Default: 'false'
+        },
+        DockerImageLocation: {
+            Description: 'Use the docker image from Github or the local AWS ECR?',
+            Type: 'String',
+            AllowedValues: ['Github', 'Local ECR'],
+            Default: 'Github'
         }
     },
     Resources: {
@@ -66,7 +39,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8446')
                 }],
-                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
+                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-base-', cf.ref('Environment'), '-elb'])),
                 Port: 443,
                 Protocol: 'TCP'
             }
@@ -78,7 +51,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup80')
                 }],
-                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
+                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-base-', cf.ref('Environment'), '-elb'])),
                 Port: 80,
                 Protocol: 'TCP'
             }
@@ -90,7 +63,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8443')
                 }],
-                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
+                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-base-', cf.ref('Environment'), '-elb'])),
                 Port: 8443,
                 Protocol: 'TCP'
             }
@@ -102,7 +75,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8446')
                 }],
-                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
+                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-base-', cf.ref('Environment'), '-elb'])),
                 Port: 8446,
                 Protocol: 'TCP'
             }
@@ -114,7 +87,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8089')
                 }],
-                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
+                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-base-', cf.ref('Environment'), '-elb'])),
                 Port: 8089,
                 Protocol: 'TCP'
             }
@@ -125,7 +98,7 @@ export default {
                 Port: 8443,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-vpc-id'])),
 
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
@@ -141,7 +114,7 @@ export default {
                 Port: 80,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-vpc-id'])),
 
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
@@ -157,7 +130,7 @@ export default {
                 Port: 8446,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-vpc-id'])),
 
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
@@ -173,7 +146,7 @@ export default {
                 Port: 8089,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-vpc-id'])),
 
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
@@ -183,44 +156,66 @@ export default {
                 HealthyThresholdCount: 2
             }
         },
+        TAKAdminP12Secret: {
+            Type: 'AWS::SecretsManager::Secret',
+            Properties: {
+                Description: cf.join([cf.stackName, ' TAK Server Admin key (p12)']),
+                Name: cf.join([cf.stackName, '/tak-admin-cert']),
+                KmsKeyId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-kms']))
+            }
+        },
         TaskDefinition: {
             Type: 'AWS::ECS::TaskDefinition',
             Properties: {
                 Family: cf.stackName,
-                Cpu: 1024 * 4,
-                Memory: 4096 * 4,
+                // Task Size options: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
+                Cpu: cf.if('CreateProdResources', 1024 * 4, 1024 * 2),
+                Memory: cf.if('CreateProdResources', 1024 * 8, 1024 * 4),
                 NetworkMode: 'awsvpc',
                 RequiresCompatibilities: ['FARGATE'],
                 Tags: [{
                     Key: 'Name',
-                    Value: cf.join('-', [cf.stackName, 'api'])
+                    Value: cf.join('-', [cf.stackName, 'takserver'])
                 }],
                 ExecutionRoleArn: cf.getAtt('ExecRole', 'Arn'),
                 TaskRoleArn: cf.getAtt('TaskRole', 'Arn'),
                 Volumes: [{
                     Name: cf.join([cf.stackName, '-tak']),
                     EFSVolumeConfiguration: {
-                        FilesystemId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs'])),
+                        FilesystemId: cf.importValue(cf.join(['coe-tak-base-', cf.ref('Environment'), '-efs'])),
                         TransitEncryption: 'ENABLED',
                         AuthorizationConfig: {
-                            AccessPointId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs-ap-certs']))
+                            AccessPointId: cf.importValue(cf.join(['coe-tak-base-', cf.ref('Environment'), '-efs-ap-certs']))
                         },
                         RootDirectory: '/'
                     }
                 },{
                     Name: cf.join([cf.stackName, '-letsencrypt']),
                     EFSVolumeConfiguration: {
-                        FilesystemId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs'])),
+                        FilesystemId: cf.importValue(cf.join(['coe-tak-base-', cf.ref('Environment'), '-efs'])),
                         TransitEncryption: 'ENABLED',
                         AuthorizationConfig: {
-                            AccessPointId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs-ap-letsencrypt']))
+                            AccessPointId: cf.importValue(cf.join(['coe-tak-base-', cf.ref('Environment'), '-efs-ap-letsencrypt']))
                         },
                         RootDirectory: '/'
                     }
                 }],
                 ContainerDefinitions: [{
-                    Name: 'api',
-                    Image: cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/coe-ecr-tak:', cf.ref('GitSha')]),
+                    Name: 'takserver',
+                    HealthCheck: {
+                        Command: [
+                            'CMD-SHELL',
+                            'curl -ks -o /dev/null https://localhost:8446 || exit 1'
+                        ],
+                        Interval: 30,
+                        Retries: 3,
+                        StartPeriod: 60,
+                        Timeout: 30
+                    },
+                    Image: cf.if('DockerGithubImage',
+                        'ghcr.io/tak-nz/takserver:latest',
+                        cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/coe-base-', cf.ref('Environment'), ':takserver-', cf.ref('GitSha')])
+                    ),
                     MountPoints: [{
                         ContainerPath: '/opt/tak/certs/files',
                         SourceVolume: cf.join([cf.stackName, '-tak'])
@@ -237,58 +232,37 @@ export default {
                     },{
                         ContainerPort: 8089
                     }],
-                    Environment: [{
-                        Name: 'LDAP_Domain',
-                        Value: cf.ref('LDAPDomain')
-                    },{
-                        Name: 'LDAP_SECURE_URL',
-                        Value: cf.ref('LDAPSecureUrl')
-                    },{
-                        Name: 'StackName',
-                        Value: cf.stackName
-                    },{
-                        Name: 'HostedEmail',
-                        Value: cf.ref('HostedEmail')
-                    },{
-                        Name: 'HostedDomain',
-                        Value: cf.ref('HostedDomain')
-                    },{
-                        Name: 'LetsencryptProdCert',
-                        Value: cf.ref('LetsencryptProdCert')
-                    },{
-                        Name: 'ECS_Cluster_Name',
-                        Value: cf.join(['coe-ecs-', cf.ref('Environment')])
-                    },{
-                        Name: 'ECS_Service_Name',
-                        Value: cf.join([cf.stackName,  '-Service'])
-                    },{
-                        Name: 'LDAP_Password',
-                        Value: cf.sub('{{resolve:secretsmanager:coe-auth-${Environment}/svc:SecretString:password:AWSCURRENT}}')
-                    },{
-                        Name: 'PostgresUsername',
-                        Value: cf.sub('{{resolve:secretsmanager:coe-tak-network-${Environment}/rds/secret:SecretString:username:AWSCURRENT}}')
-                    },{
-                        Name: 'PostgresPassword',
-                        Value: cf.sub('{{resolve:secretsmanager:coe-tak-network-${Environment}/rds/secret:SecretString:password:AWSCURRENT}}')
-                    },{
-                        Name: 'PostgresURL',
-                        Value: cf.join(['postgresql://', cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-db-endpoint'])), ':5432/tak_ps_etl'])
-                    },{
-                        Name: 'COUNTRY',
-                        Value: cf.ref('CertificateCountry')
-                    },{
-                        Name: 'STATE',
-                        Value: cf.ref('CertificateState')
-                    },{
-                        Name: 'CITY',
-                        Value: cf.ref('CertificateCity')
-                    },{
-                        Name: 'ORGANIZATION',
-                        Value: cf.ref('CertificateOrg')
-                    },{
-                        Name: 'ORGANIZATIONAL_UNIT',
-                        Value: cf.ref('CertificateOrgUnit')
-                    }],
+                    Environment: [
+                        { Name: 'LDAP_DN',              Value: cf.ref('LDAPDN') },
+                        { Name: 'LDAP_SECURE_URL',      Value: cf.ref('LDAPSecureUrl') },
+                        { Name: 'StackName',            Value: cf.stackName  },
+                        { Name: 'Environment',          Value: cf.ref('Environment') },
+                        { Name: 'ECS_Cluster_Name',     Value: cf.join(['coe-base-', cf.ref('Environment')]) },
+                        { Name: 'ECS_Service_Name',     Value: cf.join([cf.stackName,  '-Service']) },
+                        { Name: 'PostgresUsername',     Value: cf.sub('{{resolve:secretsmanager:coe-tak-base-${Environment}/rds/secret:SecretString:username:AWSCURRENT}}') },
+                        { Name: 'PostgresURL',          Value: cf.join(['postgresql://', cf.importValue(cf.join(['coe-tak-base-', cf.ref('Environment'), '-db-endpoint'])), ':5432/takserver']) },
+                        // { Name: 'HostedEmail',          Value: cf.ref('HostedEmail') },
+                        // { Name: 'HostedDomain',         Value: cf.ref('HostedDomain') },
+                        // { Name: 'LetsencryptProdCert',  Value: cf.ref('LetsencryptProdCert') },
+                        // { Name: 'COUNTRY',              Value: cf.ref('CertificateCountry') },
+                        // { Name: 'STATE',                Value: cf.ref('CertificateState') },
+                        // { Name: 'CITY',                 Value: cf.ref('CertificateCity') },
+                        // { Name: 'ORGANIZATION',         Value: cf.ref('CertificateOrg') },
+                        // { Name: 'ORGANIZATIONAL_UNIT',  Value: cf.ref('CertificateOrgUnit') },
+                    ],
+                    Secrets: [
+                        { Name: 'LDAP_Password',        ValueFrom: cf.join([cf.importValue(cf.join(['coe-auth-', cf.ref('Environment'), '-ldapservice-user'])), ':password::']) },
+                        { Name: 'PostgresPassword',     ValueFrom: cf.join([cf.importValue(cf.join(['coe-tak-base-', cf.ref('Environment'), '-ldapservice-password'])), ':password::']) }
+                    ],
+                    EnvironmentFiles: [
+                        cf.if('S3ConfigValueSet',
+                            {
+                                Value: cf.join([cf.join([cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-s3'])), '/takserver-config.env'])]),
+                                Type: 's3'
+                            },
+                            cf.ref('AWS::NoValue')
+                        )
+                    ],
                     LogConfiguration: {
                         LogDriver: 'awslogs',
                         Options: {
@@ -316,9 +290,10 @@ export default {
                     }]
                 },
                 Policies: [{
-                    PolicyName: cf.join('-', [cf.stackName, 'api-policy']),
+                    PolicyName: cf.join('-', [cf.stackName, 'takserver-policy']),
                     PolicyDocument: {
                         Statement: [{
+                            // ECS Exec permissions
                             Effect: 'Allow',
                             Action: [
                                 'ssmmessages:CreateControlChannel',
@@ -330,29 +305,28 @@ export default {
                         },{
                             Effect: 'Allow',
                             Action: [
+                                'logs:CreateLogStream',
+                                'logs:DescribeLogStreams',
+                                'logs:PutLogEvents',
+                                'logs:DescribeLogGroups'
+                            ],
+                            Resource: [cf.join(['arn:', cf.partition, ':logs:*:*:*'])]
+                        },{
+                            Effect: 'Allow',
+                            Action: [
                                 'kms:Decrypt',
                                 'kms:GenerateDataKey'
                             ],
                             Resource: [
-                                cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-kms']))
+                                cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-kms']))
                             ]
                         },{
                             Effect: 'Allow',
                             Action: [
-                                'secretsmanager:Describe*',
-                                'secretsmanager:Get*',
-                                'secretsmanager:List*'
+                                'secretsmanager:PutSecretValue'
                             ],
                             Resource: [
-                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/*'])
-                            ]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                'secretsmanager:Put*'
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/tak-admin-cert'])
+                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/tak-admin-cert*'])
                             ]
                         },{
                             Effect: 'Allow',
@@ -360,7 +334,7 @@ export default {
                                 'ecs:UpdateService'
                             ],
                             Resource: [
-                                cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':service/coe-ecs-', cf.ref('Environment'), '/', cf.stackName, '-Service'])
+                                cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':service/coe-base-', cf.ref('Environment'), '/', cf.stackName, '-Service'])
                             ]
                         }]
                     }
@@ -381,17 +355,51 @@ export default {
                     }]
                 },
                 Policies: [{
-                    PolicyName: cf.join([cf.stackName, '-api-logging']),
+                    PolicyName: cf.join([cf.stackName, '-takserver-logging']),
                     PolicyDocument: {
                         Statement: [{
                             Effect: 'Allow',
                             Action: [
-                                'logs:CreateLogGroup',
                                 'logs:CreateLogStream',
-                                'logs:PutLogEvents',
-                                'logs:DescribeLogStreams'
+                                'logs:PutLogEvents'
                             ],
                             Resource: [cf.join(['arn:', cf.partition, ':logs:*:*:*'])]
+                        },{
+                            Effect: 'Allow',
+                            Action: [
+                                'kms:Decrypt',
+                                'kms:GenerateDataKey'
+                            ],
+                            Resource: [
+                                cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-kms']))
+                            ]
+                        },{
+                            Effect: 'Allow',
+                            Action: [
+                                'secretsmanager:DescribeSecret',
+                                'secretsmanager:GetSecretValue'
+                            ],
+                            Resource: [
+                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:', cf.stackName, '/*']),
+                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:coe-auth-', cf.ref('Environment'), '/*']),
+                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:coe-tak-base-', cf.ref('Environment'), '/*'])
+                            ]
+                        },{
+                            Effect: 'Allow',
+                            Action: [
+                                's3:GetBucketLocation'
+                            ],
+                            Resource: [
+                                cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-s3']))
+                            ]
+                        },{
+                            Effect: 'Allow',
+                            Action: [
+                                's3:GetObject',
+                            ],
+                            Resource: [
+                                cf.join([cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-s3'])), '/*'])
+                            ]
                         }]
                     }
                 }],
@@ -405,7 +413,7 @@ export default {
             Type: 'AWS::ECS::Service',
             Properties: {
                 ServiceName: cf.join('-', [cf.stackName, 'Service']),
-                Cluster: cf.join(['coe-ecs-', cf.ref('Environment')]),
+                Cluster: cf.join(['coe-base-', cf.ref('Environment')]),
                 TaskDefinition: cf.ref('TaskDefinition'),
                 HealthCheckGracePeriodSeconds: 300,
                 LaunchType: 'FARGATE',
@@ -416,7 +424,7 @@ export default {
                     AwsvpcConfiguration: {
                         AssignPublicIp: 'DISABLED',
                         SecurityGroups: [
-                            cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-service-sg']))
+                            cf.importValue(cf.join(['coe-tak-base-', cf.ref('Environment'), '-service-sg']))
                         ],
                         Subnets:  [
                             cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-private-a'])),
@@ -425,23 +433,28 @@ export default {
                     }
                 },
                 LoadBalancers: [{
-                    ContainerName: 'api',
+                    ContainerName: 'takserver',
                     ContainerPort: 8443,
                     TargetGroupArn: cf.ref('TargetGroup8443')
                 },{
-                    ContainerName: 'api',
+                    ContainerName: 'takserver',
                     ContainerPort: 80,
                     TargetGroupArn: cf.ref('TargetGroup80')
                 },{
-                    ContainerName: 'api',
+                    ContainerName: 'takserver',
                     ContainerPort: 8446,
                     TargetGroupArn: cf.ref('TargetGroup8446')
                 },{
-                    ContainerName: 'api',
+                    ContainerName: 'takserver',
                     ContainerPort: 8089,
                     TargetGroupArn: cf.ref('TargetGroup8089')
                 }]
             }
         }
+    },
+    Conditions: {
+        CreateProdResources: cf.equals(cf.ref('EnvType'), 'prod'),
+        S3ConfigValueSet: cf.equals(cf.ref('TAKConfigFile'), true),
+        DockerGithubImage: cf.equals(cf.ref('DockerImageLocation'), 'Github')
     }
 };

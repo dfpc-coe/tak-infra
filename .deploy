@@ -1,12 +1,13 @@
 {
-    "name": "coe-tak",
+    "name": "tak-server",
     "profile": "coegc",
     "region": "us-gov-east-1",
     "tags": [
         {
             "Key": "Project",
-            "Value": "tak"
+            "Value": "tak-infra"
         },
+        "awsApplication",
         "Owner",
         "Client"
     ],

@@ -1,0 +1,18 @@
+
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <script type="text/javascript" src="/Marti/jquery/jquery-3.5.0.js"></script>
+    <script type="text/javascript">
+
+      window.onload = function() {
+	      $.get("/Marti/api/home", function(data) {
+    		  console.log(data);
+    		  window.location.replace(data);
+    	      }, 'text');
+      }
+    </script>
+  </head>
+</html>
+
+
