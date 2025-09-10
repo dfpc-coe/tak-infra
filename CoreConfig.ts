@@ -186,6 +186,8 @@ if (!CoreConfig) {
                         serviceAccountDN: LDAP_Auth.LDAP_ServiceAccountDN + process.env.LDAP_DN,
                         serviceAccountCredential: process.env.LDAP_Password,
                         userObjectClass: LDAP_Auth.LDAP_UserObjectClass,
+                        x509groups: LDAP_Auth.X509groups,
+                        x509addAnonymous: LDAP_Auth.X509addAnonymous,
                         groupObjectClass: LDAP_Auth.LDAP_GroupObjectClass,
                         groupBaseRDN: LDAP_Auth.LDAP_GroupBaseRDN + process.env.LDAP_DN,
                         userBaseRDN: LDAP_Auth.LDAP_UserBaseRDN + process.env.LDAP_DN,

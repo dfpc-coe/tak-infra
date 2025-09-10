@@ -57,71 +57,71 @@ const Auth = Type.Object({
             url: Type.String(),
             userstring: Type.String(),
             updateinterval: Type.Optional(Type.Integer()),
-            groupprefix: Type.String({
+            groupprefix: Type.Optional(Type.String({
                 default: ''
-            }),
-            groupNameExtractorRegex: Type.String({
+            })),
+            groupNameExtractorRegex: Type.Optional(Type.String({
                 default: "CN=(.*?)(?:,|$)"
-            }),
-            style: Type.String({
+            })),
+            style: Type.Optional(Type.String({
                 default: 'DS'
-            }),
-            ldapSecurityType: Type.String({
+            })),
+            ldapSecurityType: Type.Optional(Type.String({
                 default: 'simple'
-            }),
+            })),
             serviceAccountDN: Type.Optional(Type.String()),
             serviceAccountCredential: Type.Optional(Type.String()),
-            groupObjectClass: Type.String({
+            groupObjectClass: Type.Optional(Type.String({
                 default: 'group'
-            }),
-            userObjectClass: Type.String({
+            })),
+            userObjectClass: Type.Optional(Type.String({
                 default: 'user'
-            }),
+            })),
             groupBaseRDN: Type.Optional(Type.String()),
             userBaseRDN: Type.Optional(Type.String()),
-            x509groups: Type.Boolean({
+            x509groups: Type.Optional(Type.Boolean({
                 default: true
-            }),
-            x509addAnonymous: Type.Boolean({
+            })),
+            x509addAnonymous: Type.Optional(Type.Boolean({
                 default: false
-            }),
-            matchGroupInChain: Type.Boolean({
+            })),
+            matchGroupInChain: Type.Optional(Type.Boolean({
                 default: false
-            }),
-            nestedGroupLookup: Type.Boolean({
+            })),
+            nestedGroupLookup: Type.Optional(Type.Boolean({
                 default: false
-            }),
-            postMissionEventsAsPublic: Type.Boolean({
+            })),
+            postMissionEventsAsPublic: Type.Optional(Type.Boolean({
                 default: false
-            }),
+            })),
             ldapsTruststore: Type.Optional(Type.String()),
             ldapsTruststoreFile: Type.Optional(Type.String()),
             ldapsTruststorePass: Type.Optional(Type.String()),
             readOnlyGroup: Type.Optional(Type.String()),
-            readGroupSuffix: Type.String({
+            readGroupSuffix: Type.Optional(Type.String({
                 default: '_READ'
-            }),
-            writeGroupSuffix: Type.String({
+            })),
+            writeGroupSuffix: Type.Optional(Type.String({
                 default: '_WRITE'
-            }),
-            loginWithEmail: Type.Boolean({
+            })),
+            loginWithEmail: Type.Optional(Type.Boolean({
                 default: false
-            }),
+            })),
             callsignAttribute: Type.Optional(Type.String()),
             colorAttribute: Type.Optional(Type.String()),
             roleAttribute: Type.Optional(Type.String()),
-            enableConnectionPool: Type.Boolean({
+            enableConnectionPool: Type.Optional(Type.Boolean({
                 default: false
-            }),
-            connectionPoolTimeout: Type.Integer({
+            })),
+            connectionPoolTimeout: Type.Optional(Type.Integer({
                 default: 30000
-            }),
-            dnAttributeName: Type.String({
+            })),
+            dnAttributeName: Type.Optional(Type.String({
                 default: 'distinguishedName'
-            }),
-            nameAttr: Type.String({
+            })),
+            nameAttr: Type.Optional(Type.String({
                 default: 'cn'
-            }),
+            })),
         })
     })
 })
