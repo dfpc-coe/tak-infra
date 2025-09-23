@@ -33,6 +33,16 @@ export default cf.merge(
         Conditions: {
             CreateProdResources: cf.equals(cf.ref('HighAvailability'), 'true')
         },
+        Resources: {
+            ApplicationAssociation: {
+                Type: 'AWS::ServiceCatalogAppRegistry::ResourceAssociation',
+                Properties: {
+                    Application: cf.join(['arn:', cf.partition, ':servicecatalog:', cf.region, ':', cf.accountId, ':/applications/', cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-application']))]),
+                    Resource: cf.stackId,
+                    ResourceType: 'CFN_STACK'
+                }
+            }
+        }
     },
     RDSAlarms({
        prefix: 'Batch',

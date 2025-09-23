@@ -15,6 +15,16 @@ export default cf.merge(
                 Type: 'String',
                 Default: 'prod'
             }
+        },
+        Resources: {
+            ApplicationAssociation: {
+                Type: 'AWS::ServiceCatalogAppRegistry::ResourceAssociation',
+                Properties: {
+                    Application: cf.join(['arn:', cf.partition, ':servicecatalog:', cf.region, ':', cf.accountId, ':/applications/', cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-application']))]),
+                    Resource: cf.stackId,
+                    ResourceType: 'CFN_STACK'
+                }
+            }
         }
     }
 );
