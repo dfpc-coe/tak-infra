@@ -83,13 +83,9 @@ export default {
                 StorageEncrypted: true,
                 MasterUsername: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}'),
                 MasterUserPassword: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}'),
-                PerformanceInsightsKMSKeyId: cf.ref('KMS'),
-                PerformanceInsightsRetentionPeriod: 7,
                 BackupRetentionPeriod: 10,
                 StorageType: 'aurora',
-                VPCSecurityGroups: [cf.ref('DBVPCSecurityGroup')],
                 DBSubnetGroupName: cf.ref('DBSubnet'),
-                PubliclyAccessible: false,
                 DeletionProtection: true
             }
         },
@@ -105,7 +101,7 @@ export default {
                 MonitoringInterval: 60,
                 MonitoringRoleArn: cf.getAtt('DBMonitoringRole', 'Arn'),
                 EnablePerformanceInsights: 'true',
-                PerformanceInsightsKMSKeyId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-kms'])),
+                PerformanceInsightsKMSKeyId: cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-kms'])),
                 PerformanceInsightsRetentionPeriod: 7,
                 DBInstanceClass: 'db.t4g.large'
             }
@@ -123,7 +119,7 @@ export default {
                 MonitoringInterval: 60,
                 MonitoringRoleArn: cf.getAtt('DBMonitoringRole', 'Arn'),
                 EnablePerformanceInsights: 'true',
-                PerformanceInsightsKMSKeyId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-kms'])),
+                PerformanceInsightsKMSKeyId: cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-kms'])),
                 PerformanceInsightsRetentionPeriod: 7,
                 DBInstanceClass: 'db.t4g.large'
             }
@@ -133,8 +129,8 @@ export default {
             Properties: {
                 DBSubnetGroupDescription: cf.join('-', [cf.stackName, 'rds-subnets']),
                 SubnetIds: [
-                    cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-private-a'])),
-                    cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-private-b']))
+                    cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-subnet-private-a'])),
+                    cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-subnet-private-b']))
                 ]
             }
         },
@@ -147,7 +143,7 @@ export default {
                 }],
                 GroupName: cf.join('-', [cf.stackName, 'rds-sg']),
                 GroupDescription: 'Allow RDS Database Ingress',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-vpc'])),
                 SecurityGroupIngress: [{
                     IpProtocol: '-1',
                     FromPort: 5432,
@@ -163,7 +159,7 @@ export default {
             Export: {
                 Name: cf.join([cf.stackName, '-db-endpoint'])
             },
-            Value: cf.getAtt('DBInstance', 'Endpoint.Address')
+            Value: cf.getAtt('DBCluster', 'Endpoint.Address')
         },
         DB: {
             Description: 'Postgres Connection String',
@@ -173,7 +169,7 @@ export default {
                 ':',
                 cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}'),
                 '@',
-                cf.getAtt('DBInstance', 'Endpoint.Address'),
+                cf.getAtt('DBCluster', 'Endpoint.Address'),
                 ':5432/tak_ps_etl'
             ])
         }

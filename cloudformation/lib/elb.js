@@ -10,7 +10,7 @@ export default {
                     Value: cf.join('-', [cf.stackName, 'ecs-sg'])
                 }],
                 GroupDescription: 'Allow access to TAK ports',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-vpc'])),
                 SecurityGroupIngress: [{
                     Description: 'ELB Traffic',
                     SourceSecurityGroupId: cf.ref('ELBSecurityGroup'),
@@ -53,8 +53,8 @@ export default {
                 IpAddressType: 'dualstack',
                 SecurityGroups: [cf.ref('ELBSecurityGroup')],
                 Subnets:  [
-                    cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-a'])),
-                    cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-b']))
+                    cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-subnet-public-a'])),
+                    cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-subnet-public-b']))
                 ]
             }
 
@@ -93,7 +93,7 @@ export default {
                     FromPort: 8089,
                     ToPort: 8089
                 }],
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc']))
+                VpcId: cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-vpc']))
             }
         }
     },

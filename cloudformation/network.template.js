@@ -22,8 +22,17 @@ export default cf.merge(
                 Description: 'VPC/ECS Stack to deploy into',
                 Type: 'String',
                 Default: 'prod'
+            },
+            HighAvailability: {
+                Description: 'High Availability Mode',
+                Default: 'false',
+                Type: 'String',
+                AllowedValues: ['true', 'false']
             }
-        }
+        },
+        Conditions: {
+            CreateProdResources: cf.equals(cf.ref('HighAvailability'), 'true')
+        },
     }
 //    RDSAlarms({
 //       prefix: 'Batch',

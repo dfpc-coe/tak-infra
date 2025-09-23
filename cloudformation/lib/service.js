@@ -125,7 +125,7 @@ export default {
                 Port: 8443,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-vpc'])),
 
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
@@ -141,7 +141,7 @@ export default {
                 Port: 80,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-vpc'])),
 
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
@@ -157,7 +157,7 @@ export default {
                 Port: 8446,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-vpc'])),
 
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
@@ -173,7 +173,7 @@ export default {
                 Port: 8089,
                 Protocol: 'TCP',
                 TargetType: 'ip',
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-vpc'])),
 
                 HealthCheckEnabled: true,
                 HealthCheckIntervalSeconds: 30,
@@ -426,8 +426,8 @@ export default {
                             cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-service-sg']))
                         ],
                         Subnets:  [
-                            cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-private-a'])),
-                            cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-private-b']))
+                            cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-subnet-private-a'])),
+                            cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-subnet-private-b']))
                         ]
                     }
                 },

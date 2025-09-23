@@ -24,7 +24,7 @@ export default {
                 },
                 AccessPointTags: [{
                     Key: 'Name',
-                    Value: cf.join('-', [cf.stackName, 'tak-letsencrypt'])
+                    Value: cf.join('-', [cf.stackName, 'tak-certs-files'])
                 }],
                 RootDirectory: {
                     CreationInfo: {
@@ -44,6 +44,10 @@ export default {
                     Uid: 0,
                     Gid: 0
                 },
+                AccessPointTags: [{
+                    Key: 'Name',
+                    Value: cf.join('-', [cf.stackName, 'tak-letsencrypt'])
+                }],
                 RootDirectory: {
                     CreationInfo: {
                         OwnerGid: 0,
@@ -58,7 +62,7 @@ export default {
             Type: 'AWS::EFS::MountTarget',
             Properties: {
                 FileSystemId: cf.ref('EFSFileSystem'),
-                SubnetId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-a'])),
+                SubnetId: cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-subnet-public-a'])),
                 SecurityGroups: [cf.ref('EFSSecurityGroup')]
             }
         },
@@ -66,7 +70,7 @@ export default {
             Type: 'AWS::EFS::MountTarget',
             Properties: {
                 FileSystemId: cf.ref('EFSFileSystem'),
-                SubnetId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-subnet-public-b'])),
+                SubnetId: cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-subnet-public-b'])),
                 SecurityGroups: [cf.ref('EFSSecurityGroup')]
             }
         },
@@ -77,7 +81,7 @@ export default {
                     Key: 'Name',
                     Value: cf.join('-', [cf.stackName, 'vpc'])
                 }],
-                VpcId: cf.importValue(cf.join(['coe-vpc-', cf.ref('Environment'), '-vpc'])),
+                VpcId: cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-vpc'])),
                 GroupDescription: 'Allow EFS Access in Forum Task',
                 SecurityGroupIngress: [{
                     IpProtocol: 'tcp',
