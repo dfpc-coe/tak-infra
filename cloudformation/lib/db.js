@@ -15,12 +15,6 @@ export default {
             Description: 'PostgreSQL database engine version',
             Type: 'String',
             Default: '17.4'
-        },
-        DatabaseMultiAZ: {
-            Description: 'PostgreSQL database as a Multi-AZ deployment',
-            Type: 'String',
-            AllowedValues: ['true', 'false'],
-            Default: 'false'
         }
     },
     Resources: {
