@@ -35,7 +35,7 @@
         "xml-js": "^1.6.11"
     },
     "devDependencies": {
-        "@openaddresses/batch-alarms": "^4.1.0",
+        "@openaddresses/batch-alarms": "^4.9.2",
         "@openaddresses/deploy": "^9.0.0",
         "@types/node": "^24.0.0",
         "eslint": "^9.1.1",

@@ -4,10 +4,9 @@ import Alarms from './lib/alarms.js';
 import KMS from './lib/kms.js';
 import EFS from './lib/efs.js';
 import ELB from './lib/elb.js';
-
-// import {
-//    RDS as RDSAlarms
-// } from '@openaddresses/batch-alarms';
+import {
+   RDS as RDSAlarms
+} from '@openaddresses/batch-alarms';
 
 export default cf.merge(
     DB, KMS, Alarms, EFS, ELB,
@@ -33,10 +32,10 @@ export default cf.merge(
         Conditions: {
             CreateProdResources: cf.equals(cf.ref('HighAvailability'), 'true')
         },
-    }
-//    RDSAlarms({
-//       prefix: 'Batch',
-//       topic: cf.ref('AlarmTopic'),
-//       instance: cf.ref('DBInstance')
-//    })
+    },
+    RDSAlarms({
+       prefix: 'Batch',
+       topic: cf.ref('AlarmTopic'),
+       cluster: cf.ref('DBCluster')
+    })
 );
