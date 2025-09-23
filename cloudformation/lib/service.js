@@ -263,7 +263,7 @@ export default {
                         Value: cf.join(['coe-ecs-', cf.ref('Environment')])
                     },{
                         Name: 'ECS_Service_Name',
-                        Value: cf.join([cf.stackName,  '-Service'])
+                        Value: cf.stackName
                     },{
                         Name: 'LDAP_Password',
                         Value: cf.sub('{{resolve:secretsmanager:coe-auth-${Environment}/svc:SecretString:password:AWSCURRENT}}')
@@ -367,7 +367,15 @@ export default {
                                 'ecs:UpdateService'
                             ],
                             Resource: [
-                                cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':service/coe-ecs-', cf.ref('Environment'), '/', cf.stackName, '-Service'])
+                                cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':service/coe-ecs-', cf.ref('Environment'), '/', cf.stackName])
+                            ]
+                        },{
+                            Effect: 'Allow',
+                            Action: [
+                                's3:*',
+                            ],
+                            Resource: [
+                                cf.join(['arn:', cf.partition, ':s3:::service/tak-server-network-', cf.ref('Environment'), '-', cf.accountId, '-', cf.region])
                             ]
                         }]
                     }
@@ -411,7 +419,7 @@ export default {
         Service: {
             Type: 'AWS::ECS::Service',
             Properties: {
-                ServiceName: cf.join('-', [cf.stackName, 'Service']),
+                ServiceName: cf.stackName,
                 Cluster: cf.join(['coe-ecs-', cf.ref('Environment')]),
                 TaskDefinition: cf.ref('TaskDefinition'),
                 HealthCheckGracePeriodSeconds: 300,
