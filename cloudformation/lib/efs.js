@@ -22,6 +22,10 @@ export default {
                     Uid: 0,
                     Gid: 0
                 },
+                AccessPointTags: [{
+                    Key: 'Name',
+                    Value: cf.join('-', [cf.stackName, 'tak-letsencrypt'])
+                }],
                 RootDirectory: {
                     CreationInfo: {
                         OwnerGid: 0,

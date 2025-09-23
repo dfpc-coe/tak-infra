@@ -32,7 +32,7 @@ export default {
                     SecretStringTemplate: '{"username": "tak"}',
                     GenerateStringKey: 'password',
                     ExcludePunctuation: true,
-                    PasswordLength: 32
+                    PasswordLength: 64
                 },
                 Name: cf.join([cf.stackName, '/rds/secret']),
                 KmsKeyId: cf.ref('KMS')
@@ -42,8 +42,8 @@ export default {
             Type: 'AWS::SecretsManager::SecretTargetAttachment',
             Properties: {
                 SecretId: cf.ref('DBMasterSecret'),
-                TargetId: cf.ref('DBInstance'),
-                TargetType: 'AWS::RDS::DBInstance'
+                TargetId: cf.ref('DBCluster'),
+                TargetType: 'AWS::RDS::DBCluster'
             }
         },
         DBMonitoringRole: {
@@ -66,15 +66,16 @@ export default {
                 Path: '/'
             }
         },
-        DBInstance: {
-            Type: 'AWS::RDS::DBInstance',
+        DBCluster: {
+            Type: 'AWS::RDS::DBCluster',
             DependsOn: ['DBMasterSecret'],
+            DeletionPolicy: 'Snapshot',
+            UpdateReplacePolicy: 'Snapshot',
             Properties: {
-                Engine: 'postgres',
-                AllowMajorVersionUpgrade: false,
-                DBName: 'tak_ps_etl',
+                Engine: 'aurora-postgresql',
+                Port: 5432,
+                DatabaseName: 'takserver',
                 CopyTagsToSnapshot: true,
-                DBInstanceIdentifier: cf.stackName,
                 MonitoringInterval: 60,
                 MonitoringRoleArn: cf.getAtt('DBMonitoringRole', 'Arn'),
                 KmsKeyId: cf.ref('KMS'),
@@ -82,21 +83,49 @@ export default {
                 StorageEncrypted: true,
                 MasterUsername: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}'),
                 MasterUserPassword: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}'),
-                MultiAZ: cf.ref('DatabaseMultiAZ'),
-                PreferredMaintenanceWindow: 'Sun:23:00-Sun:23:30',
-                PreferredBackupWindow: '22:00-23:00',
-                EnablePerformanceInsights: true,
                 PerformanceInsightsKMSKeyId: cf.ref('KMS'),
                 PerformanceInsightsRetentionPeriod: 7,
-                AllocatedStorage: 200,
-                MaxAllocatedStorage: 200,
                 BackupRetentionPeriod: 10,
-                StorageType: 'gp2',
-                DBInstanceClass: cf.ref('DatabaseType'),
+                StorageType: 'aurora',
                 VPCSecurityGroups: [cf.ref('DBVPCSecurityGroup')],
                 DBSubnetGroupName: cf.ref('DBSubnet'),
                 PubliclyAccessible: false,
                 DeletionProtection: true
+            }
+        },
+        DBFirstInstance: {
+            Type: 'AWS::RDS::DBInstance',
+            DependsOn: ['DBMasterSecret'],
+            Properties: {
+                DBClusterIdentifier: cf.ref('DBCluster'),
+                Engine: 'aurora-postgresql',
+                EngineVersion: cf.ref('DatabaseVersion'),
+                AllowMajorVersionUpgrade: false,
+                DBInstanceIdentifier: cf.join([cf.stackName, '-primary']),
+                MonitoringInterval: 60,
+                MonitoringRoleArn: cf.getAtt('DBMonitoringRole', 'Arn'),
+                EnablePerformanceInsights: 'true',
+                PerformanceInsightsKMSKeyId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-kms'])),
+                PerformanceInsightsRetentionPeriod: 7,
+                DBInstanceClass: 'db.t4g.large'
+            }
+        },
+        DBSecondInstance: {
+            Type: 'AWS::RDS::DBInstance',
+            Condition: 'CreateProdResources',
+            DependsOn: ['DBMasterSecret'],
+            Properties: {
+                DBClusterIdentifier: cf.ref('DBCluster'),
+                Engine: 'aurora-postgresql',
+                EngineVersion: cf.ref('DatabaseVersion'),
+                AllowMajorVersionUpgrade: false,
+                DBInstanceIdentifier: cf.join([cf.stackName, '-secondary']),
+                MonitoringInterval: 60,
+                MonitoringRoleArn: cf.getAtt('DBMonitoringRole', 'Arn'),
+                EnablePerformanceInsights: 'true',
+                PerformanceInsightsKMSKeyId: cf.importValue(cf.join(['coe-base-', cf.ref('Environment'), '-kms'])),
+                PerformanceInsightsRetentionPeriod: 7,
+                DBInstanceClass: 'db.t4g.large'
             }
         },
         DBSubnet: {
