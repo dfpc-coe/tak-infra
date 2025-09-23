@@ -33,10 +33,6 @@ export default {
             Type: 'String',
             Default: 'TAK-Unit'
         },
-        HostedDomain: {
-            Description: 'Hosted Domain',
-            Type: 'String'
-        },
         HostedEmail: {
             Description: 'Hosted Email',
             Type: 'String'
@@ -244,8 +240,14 @@ export default {
                         Name: 'LDAP_SECURE_URL',
                         Value: cf.ref('LDAPSecureUrl')
                     },{
+                        Name: 'LDAP_Password',
+                        Value: cf.sub('{{resolve:secretsmanager:coe-auth-${Environment}/svc:SecretString:password:AWSCURRENT}}')
+                    },{
                         Name: 'StackName',
                         Value: cf.stackName
+                    },{
+                        Name: 'ClusterBucket',
+                        Value: cf.join('-', ['tak-server-network', cf.ref('Environment'), cf.accountId, cf.region])
                     },{
                         Name: 'Environment',
                         Value: cf.ref('Environment')
@@ -254,7 +256,7 @@ export default {
                         Value: cf.ref('HostedEmail')
                     },{
                         Name: 'HostedDomain',
-                        Value: cf.ref('HostedDomain')
+                        Value: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-hosted'])),
                     },{
                         Name: 'LetsencryptProdCert',
                         Value: cf.ref('LetsencryptProdCert')
@@ -264,9 +266,6 @@ export default {
                     },{
                         Name: 'ECS_Service_Name',
                         Value: cf.stackName
-                    },{
-                        Name: 'LDAP_Password',
-                        Value: cf.sub('{{resolve:secretsmanager:coe-auth-${Environment}/svc:SecretString:password:AWSCURRENT}}')
                     },{
                         Name: 'PostgresUsername',
                         Value: cf.sub('{{resolve:secretsmanager:coe-tak-network-${Environment}/rds/secret:SecretString:username:AWSCURRENT}}')

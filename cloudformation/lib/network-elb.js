@@ -1,7 +1,28 @@
 import cf from '@openaddresses/cloudfriend';
 
 export default {
+    Parameters: {
+        SubdomainPrefix: {
+            Description: 'Prefix of domain: ie "ops" of ops.example.com',
+            Type: 'String',
+            Default: 'ops'
+        },
+    },
     Resources: {
+        ELBDNS: {
+            Type: 'AWS::Route53::RecordSet',
+            Properties: {
+                HostedZoneId: cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-hosted-zone-id'])),
+                Type : 'A',
+                Name: cf.join([cf.ref('SubdomainPrefix'), '.', cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-hosted-zone-name']))]),
+                Comment: cf.join(' ', [cf.stackName, 'UI/API DNS Entry']),
+                AliasTarget: {
+                    DNSName: cf.getAtt('ELB', 'DNSName'),
+                    EvaluateTargetHealth: true,
+                    HostedZoneId: cf.getAtt('ELB', 'CanonicalHostedZoneID')
+                }
+            }
+        },
         ServiceSecurityGroup: {
             Type: 'AWS::EC2::SecurityGroup',
             Properties: {
@@ -105,6 +126,13 @@ export default {
             },
             Value: cf.ref('ServiceSecurityGroup')
         },
+        Hosted: {
+            Description: 'Hosted API Location',
+            Export: {
+                Name: cf.join([cf.stackName, '-hosted'])
+            },
+            Value: cf.join(['https://', cf.ref('SubdomainPrefix'), '.', cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-hosted-zone-name']))])
+        },
         ELB: {
             Description: 'ELB ARN',
             Export: {
@@ -112,9 +140,5 @@ export default {
             },
             Value: cf.ref('ELB')
         },
-        API: {
-            Description: 'API ELB',
-            Value: cf.join(['http://', cf.getAtt('ELB', 'DNSName')])
-        }
     }
 };

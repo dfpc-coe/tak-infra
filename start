@@ -146,6 +146,7 @@ while ! $SetAdminCommand; do
    echo "not ok - TAK Server - Elevating admin user privileges failed, retrying in 10 seconds..."
    sleep 10
 done
+
 echo "ok - TAK Server - Elevating admin user privileges succeeded"
 
 echo "ok - TAK Server - New ECS Task successfully started"
