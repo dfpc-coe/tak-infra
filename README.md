@@ -43,7 +43,7 @@ Deployment to AWS is handled via AWS Cloudformation. The templates can be found 
 directory. The deployment itself is performed by [Deploy](https://github.com/openaddresses/deploy) which
 was installed in the previous step.
 
-> [!NOTE] 
+> [!NOTE]
 > The deploy tool can be run via the following
 >
 > ```sh
@@ -53,7 +53,7 @@ was installed in the previous step.
 > To install it globally - view the deploy [README](https://github.com/openaddresses/deploy)
 >
 > Deploy uses your existing AWS credentials. Ensure that your `~/.aws/credentials` has an entry like:
-> 
+>
 > ```
 > [coe]
 > aws_access_key_id = <redacted>
@@ -73,23 +73,23 @@ Step 1: Create Network Portion:
 npx deploy create <stack> --template ./cloudformation/network.template.js
 ```
 
-Step 2: Setup a DNS CNAME from your desired hostname for the TAK server to the ELB hostname. The ELB hostname is one of the CloudFormation template outputs. 
+Step 2: Setup a DNS CNAME from your desired hostname for the TAK server to the ELB hostname. The ELB hostname is one of the CloudFormation template outputs.
 
 Step3: Create Service Portion (Once DNS been set & propagated)
 
 ```
 npx deploy create <stack>
 ```
-> [!NOTE] 
+> [!NOTE]
 > Stacks can be created, deleted, cancelled, etc all via the deploy tool. For further information
 > information about `deploy` functionality run the following for help.
-> 
+>
 > ```sh
 > npx deploy
 > ```
-> 
+>
 > Further help about a specific command can be obtained via something like:
-> 
+>
 > ```sh
 > npx deploy info --help
 > ```

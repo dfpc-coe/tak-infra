@@ -11,6 +11,7 @@ import { execSync } from 'node:child_process';
 import * as xmljs from 'xml-js';
 
 for (const env of [
+    'HostedDomain',
     'PostgresUsername',
     'PostgresPassword',
     'PostgresURL',
@@ -99,7 +100,7 @@ CoreConfig.Configuration.network.connector.push({
         port: 8443,
         _name: 'https',
         keystore: 'JKS',
-        keystoreFile: `/opt/tak/certs/files/${LetsEncrypt.Domain}/letsencrypt.jks`,
+        keystoreFile: `/opt/tak/certs/files/${process.env.HostedDomain}/letsencrypt.jks`,
         keystorePass: 'atakatak',
         enableNonAdminUI:false,
         enableAdminUI: true,
@@ -113,7 +114,7 @@ CoreConfig.Configuration.network.connector.push({
         clientAuth: false,
         _name: 'cert_https',
         keystore: 'JKS',
-        keystoreFile: `/opt/tak/certs/files/${LetsEncrypt.Domain}/letsencrypt.jks`,
+        keystoreFile: `/opt/tak/certs/files/${process.env.HostedDomain}/letsencrypt.jks`,
         keystorePass: 'atakatak',
         enableNonAdminUI: false,
         enableAdminUI: true,
@@ -124,25 +125,15 @@ CoreConfig.Configuration.network.connector.push({
 CoreConfig.Configuration.auth.ldap = {
     _attributes: {
         url: process.env.LDAP_SECURE_URL,
-        userstring: LDAP_Auth.LDAP_Userstring + process.env.LDAP_DN,
-        updateinterval: LDAP_Auth.LDAP_Updateinterval,
-        groupprefix: LDAP_Auth.LDAP_Groupprefix,
-        groupNameExtractorRegex: LDAP_Auth.LDAP_GroupNameExtractorRegex,
-        style: LDAP_Auth.LDAP_Style,
-        serviceAccountDN: LDAP_Auth.LDAP_ServiceAccountDN + process.env.LDAP_DN,
+        userstring: `uid={username},ou=People,${process.env.LDAP_DN}`,
+        updateinterval: 60,
+        groupprefix: '',
+        groupNameExtractorRegex: 'CN=(.*?)(?:,|$)',
+        style: 'DS',
+        serviceAccountDN: `ldapsvcaccount,${process.env.LDAP_DN}`,
         serviceAccountCredential: process.env.LDAP_Password,
-        userObjectClass: LDAP_Auth.LDAP_UserObjectClass,
-        x509groups: LDAP_Auth.X509groups,
-        x509addAnonymous: LDAP_Auth.X509addAnonymous,
-        groupObjectClass: LDAP_Auth.LDAP_GroupObjectClass,
-        groupBaseRDN: LDAP_Auth.LDAP_GroupBaseRDN + process.env.LDAP_DN,
-        userBaseRDN: LDAP_Auth.LDAP_UserBaseRDN + process.env.LDAP_DN,
-        dnAttributeName: LDAP_Auth.LDAP_DnAttributeName,
-        nameAttr: LDAP_Auth.LDAP_NameAttr,
-        nestedGroupLookup: LDAP_Auth.LDAP_NestedGroupLookup,
-        callsignAttribute: LDAP_Auth.LDAP_CallsignAttribute,
-        colorAttribute: LDAP_Auth.LDAP_ColorAttribute,
-        roleAttribute: LDAP_Auth.LDAP_RoleAttribute,
+        groupObjectClass: 'groupOfNames',
+        groupBaseRDN: `ou=Group,${process.env.LDAP_DN}`,
         ldapsTruststore: 'JKS',
         ldapsTruststoreFile: '/opt/tak/certs/files/aws-acm-root.jks',
         ldapsTruststorePass: 'INTENTIONALLY_NOT_SENSITIVE',
@@ -268,30 +259,51 @@ fs.writeFileSync(
 
 try {
     console.log('ok - TAK Server - Checking for Diff in CoreConfig.xml');
-    const diffs = diff(RemoteCoreConfig, CoreConfig);
 
-    await s3.send(new PutObjectCommand({
-        Bucket: process.env.ConfigBucket,
-        Key: 'CoreConfig.xml',
-        Body: fs.createReadStream('./CoreConfig.base.xml'),
-    }));
+    await fsp.stat('/opt/tak/CoreConfig.xml');
 
+    const LocalCoreConfig = xmljs.xml2js(fs.readFileSync('./CoreConfig.base.xml', 'utf-8'), {
+        compact: true
+    }) as Static<typeof CoreConfigType>;
+
+    const diffs = diff(CoreConfig, LocalCoreConfig);
 
     if (diffs.length > 0) {
         console.log('ok - TAK Server - CoreConfig.xml change detected');
+        console.log(diffs.join('\n'));
+
+        await fsp.writeFile('/opt/tak/CoreConfig.xml', xmljs.js2xml(CoreConfig, {
+            compact: true
+        }));
+
+        await s3.send(new PutObjectCommand({
+            Bucket: process.env.ConfigBucket,
+            Key: 'CoreConfig.xml',
+            Body: fs.createReadStream('/opt/tak/CoreConfig.xml')
+        }));
     } else {
         console.log('ok - TAK Server - No CoreConfig.xml change detected');
     }
+
 } catch (err) {
-    console.error(err);
+    if (err.code === 'ENOENT') {
+        console.log('ok - TAK Server - No existing CoreConfig.xml, creating new one');
+        await fsp.writeFile('/opt/tak/CoreConfig.xml', xmljs.js2xml(CoreConfig, {
+            compact: true
+        }));
+
+        await s3.send(new PutObjectCommand({
+            Bucket: process.env.ConfigBucket,
+            Key: 'CoreConfig.xml',
+            Body: fs.createReadStream('/opt/tak/CoreConfig.xml')
+        }));
+    } else {
+        throw err;
+    }
 }
 
 function validateKeystore(file, pass) {
     fs.accessSync(file);
     const jksBuffer = fs.readFileSync(file);
     toPem(jksBuffer, pass);
-}
-
-function stringToBoolean(str: string): boolean {
-    return str.toLowerCase() === 'true';
 }

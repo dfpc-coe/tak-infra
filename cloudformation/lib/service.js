@@ -52,6 +52,16 @@ export default {
             Description: 'LDAP Secure Connection URL',
             Type: 'String',
             Default: 'ldaps://example.com:636'
+        },
+        LDAPUser: {
+            Description: 'LDAP Bind User',
+            Type: 'String',
+            Default: 'cn=admin,dc=example,dc=com'
+        },
+        LDAPUserPassword: {
+            Description: 'LDAP Bind User Password',
+            Type: 'String',
+            Default: 'password'
         }
     },
     Resources: {
@@ -241,7 +251,7 @@ export default {
                         Value: cf.ref('LDAPSecureUrl')
                     },{
                         Name: 'LDAP_Password',
-                        Value: cf.sub('{{resolve:secretsmanager:coe-auth-${Environment}/svc:SecretString:password:AWSCURRENT}}')
+                        Value: cf.sub('{{resolve:secretsmanager:tak-auth-${Environment}/svc:SecretString:password:AWSCURRENT}}')
                     },{
                         Name: 'StackName',
                         Value: cf.stackName
