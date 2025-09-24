@@ -72,7 +72,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8446')
                 }],
-                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
+                LoadBalancerArn: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-elb'])),
                 Port: 443,
                 Protocol: 'TCP'
             }
@@ -84,7 +84,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup80')
                 }],
-                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
+                LoadBalancerArn: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-elb'])),
                 Port: 80,
                 Protocol: 'TCP'
             }
@@ -96,7 +96,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8443')
                 }],
-                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
+                LoadBalancerArn: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-elb'])),
                 Port: 8443,
                 Protocol: 'TCP'
             }
@@ -108,7 +108,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8446')
                 }],
-                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
+                LoadBalancerArn: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-elb'])),
                 Port: 8446,
                 Protocol: 'TCP'
             }
@@ -120,7 +120,7 @@ export default {
                     Type: 'forward',
                     TargetGroupArn: cf.ref('TargetGroup8089')
                 }],
-                LoadBalancerArn: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-elb'])),
+                LoadBalancerArn: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-elb'])),
                 Port: 8089,
                 Protocol: 'TCP'
             }
@@ -206,20 +206,20 @@ export default {
                 Volumes: [{
                     Name: cf.join([cf.stackName, '-tak']),
                     EFSVolumeConfiguration: {
-                        FilesystemId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs'])),
+                        FilesystemId: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-efs'])),
                         TransitEncryption: 'ENABLED',
                         AuthorizationConfig: {
-                            AccessPointId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs-ap-certs']))
+                            AccessPointId: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-efs-ap-certs']))
                         },
                         RootDirectory: '/'
                     }
                 },{
                     Name: cf.join([cf.stackName, '-letsencrypt']),
                     EFSVolumeConfiguration: {
-                        FilesystemId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs'])),
+                        FilesystemId: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-efs'])),
                         TransitEncryption: 'ENABLED',
                         AuthorizationConfig: {
-                            AccessPointId: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-efs-ap-letsencrypt']))
+                            AccessPointId: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-efs-ap-letsencrypt']))
                         },
                         RootDirectory: '/'
                     }
@@ -266,25 +266,25 @@ export default {
                         Value: cf.ref('HostedEmail')
                     },{
                         Name: 'HostedDomain',
-                        Value: cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-hosted'])),
+                        Value: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-hosted'])),
                     },{
                         Name: 'LetsencryptProdCert',
                         Value: cf.ref('LetsencryptProdCert')
                     },{
                         Name: 'ECS_Cluster_Name',
-                        Value: cf.join(['coe-ecs-', cf.ref('Environment')])
+                        Value: cf.join(['tak-vpc-', cf.ref('Environment')])
                     },{
                         Name: 'ECS_Service_Name',
                         Value: cf.stackName
                     },{
                         Name: 'PostgresUsername',
-                        Value: cf.sub('{{resolve:secretsmanager:coe-tak-network-${Environment}/rds/secret:SecretString:username:AWSCURRENT}}')
+                        Value: cf.sub('{{resolve:secretsmanager:tak-server-network-${Environment}/rds/secret:SecretString:username:AWSCURRENT}}')
                     },{
                         Name: 'PostgresPassword',
-                        Value: cf.sub('{{resolve:secretsmanager:coe-tak-network-${Environment}/rds/secret:SecretString:password:AWSCURRENT}}')
+                        Value: cf.sub('{{resolve:secretsmanager:tak-server-network-${Environment}/rds/secret:SecretString:password:AWSCURRENT}}')
                     },{
                         Name: 'PostgresURL',
-                        Value: cf.join(['postgresql://', cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-db-endpoint'])), ':5432/tak_ps_etl'])
+                        Value: cf.join(['postgresql://', cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-db-endpoint'])), ':5432/tak_ps_etl'])
                     },{
                         Name: 'COUNTRY',
                         Value: cf.ref('CertificateCountry')
@@ -346,7 +346,7 @@ export default {
                                 'kms:GenerateDataKey'
                             ],
                             Resource: [
-                                cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-kms']))
+                                cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-kms']))
                             ]
                         },{
                             Effect: 'Allow',
@@ -356,7 +356,7 @@ export default {
                                 'secretsmanager:List*'
                             ],
                             Resource: [
-                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:coe-tak-network-', cf.ref('Environment'), '/*'])
+                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:tak-server-network-', cf.ref('Environment'), '/*'])
                             ]
                         },{
                             Effect: 'Allow',
@@ -364,11 +364,11 @@ export default {
                                 'secretsmanager:Put*'
                             ],
                             Resource: [
-                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:coe-tak-network-', cf.ref('Environment'), '/tak-admin-cert']),
+                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:tak-server-network-', cf.ref('Environment'), '/tak-admin-cert']),
 
                                 // This is a wildcard as the generated ARN is occasionally prefixed with a random hash
-                                // IE: coe-tak-network-cotak-staging/root-ca/revoke-m43Ei7
-                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:coe-tak-network-', cf.ref('Environment'), '/root-ca/*']),
+                                // IE: tak-server-network-cotak-staging/root-ca/revoke-m43Ei7
+                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:tak-server-network-', cf.ref('Environment'), '/root-ca/*']),
                             ]
                         },{
                             Effect: 'Allow',
@@ -376,7 +376,7 @@ export default {
                                 'ecs:UpdateService'
                             ],
                             Resource: [
-                                cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':service/coe-ecs-', cf.ref('Environment'), '/', cf.stackName])
+                                cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':service/tak-vpc-', cf.ref('Environment'), '/', cf.stackName])
                             ]
                         },{
                             Effect: 'Allow',
@@ -429,7 +429,7 @@ export default {
             Type: 'AWS::ECS::Service',
             Properties: {
                 ServiceName: cf.stackName,
-                Cluster: cf.join(['coe-ecs-', cf.ref('Environment')]),
+                Cluster: cf.join(['tak-vpc-', cf.ref('Environment')]),
                 TaskDefinition: cf.ref('TaskDefinition'),
                 HealthCheckGracePeriodSeconds: 300,
                 LaunchType: 'FARGATE',
@@ -440,7 +440,7 @@ export default {
                     AwsvpcConfiguration: {
                         AssignPublicIp: 'DISABLED',
                         SecurityGroups: [
-                            cf.importValue(cf.join(['coe-tak-network-', cf.ref('Environment'), '-service-sg']))
+                            cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-service-sg']))
                         ],
                         Subnets:  [
                             cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-subnet-private-a'])),

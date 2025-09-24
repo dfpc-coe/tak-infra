@@ -28,10 +28,10 @@ cd /opt/tak/certs
 mkdir -p "/opt/tak/certs/files/${HostedDomain}/" || true
 
 echo "ok - Root CA - Checking for AWS Secrets Manager Secret"
-ROOT_CA_PUBLIC=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-${Environment}/root-ca/public 2> /dev/null) || $(echo "")
-ROOT_CA_PUBLIC_TRUSTED=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-${Environment}/root-ca/public-trusted 2> /dev/null) || $(echo "")
-ROOT_CA_PRIVATE=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-${Environment}/root-ca/private 2> /dev/null) || $(echo "")
-ROOT_CA_REVOKE=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-${Environment}/root-ca/revoke 2> /dev/null) || $(echo "")
+ROOT_CA_PUBLIC=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/root-ca/public 2> /dev/null) || $(echo "")
+ROOT_CA_PUBLIC_TRUSTED=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/root-ca/public-trusted 2> /dev/null) || $(echo "")
+ROOT_CA_PRIVATE=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/root-ca/private 2> /dev/null) || $(echo "")
+ROOT_CA_REVOKE=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/root-ca/revoke 2> /dev/null) || $(echo "")
 
 if [[ -n ${ROOT_CA_PUBLIC} ]]; then
     echo "ok - Root CA - Found in AWS Secrets Manager"
@@ -63,19 +63,19 @@ if [[ -z ${ROOT_CA_PUBLIC} ]] && [[ -z ${ROOT_CA_PUBLIC_TRUSTED} ]] && [[ -z ${R
     fi
 
     aws secretsmanager put-secret-value \
-        --secret-id "coe-tak-network-${Environment}/root-ca/public" \
+        --secret-id "tak-server-network-${Environment}/root-ca/public" \
         --secret-binary fileb://files/ca.pem|| true
 
     aws secretsmanager put-secret-value \
-        --secret-id "coe-tak-network-${Environment}/root-ca/public-trusted" \
+        --secret-id "tak-server-network-${Environment}/root-ca/public-trusted" \
         --secret-binary fileb://files/ca-trusted.pem|| true
 
     aws secretsmanager put-secret-value \
-        --secret-id "coe-tak-network-${Environment}/root-ca/private" \
+        --secret-id "tak-server-network-${Environment}/root-ca/private" \
         --secret-binary fileb://files/ca-do-not-share.key || true
 
     aws secretsmanager put-secret-value \
-        --secret-id "coe-tak-network-${Environment}/root-ca/revoke" \
+        --secret-id "tak-server-network-${Environment}/root-ca/revoke" \
         --secret-binary fileb://files/ca.crl || true
 fi
 
@@ -86,11 +86,11 @@ if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
     { yes || :; } | /opt/tak/certs/makeCert.sh client admin
 
     aws secretsmanager put-secret-value \
-        --secret-id coe-tak-network-${Environment}/tak-admin-cert \
+        --secret-id tak-server-network-${Environment}/tak-admin-cert \
         --secret-binary fileb://files/admin.p12 || true
 fi
 
-ROOT_CA_REVOKE=$(aws secretsmanager get-secret-value --secret-id coe-tak-network-cotak-staging/root-ca/revoke 2> /dev/null || "")
+ROOT_CA_REVOKE=$(aws secretsmanager get-secret-value --secret-id tak-server-network-cotak-staging/root-ca/revoke 2> /dev/null || "")
 
 # Restore LetsEncrypt cert
 # If no previous LetsEncrypt certs exist, use the self-signed ones

@@ -14,8 +14,7 @@ The following are dependencies which need to be created:
 
 | Name                  | Notes |
 | --------------------- | ----- |
-| `coe-vpc-<name>`      | VPC & networking to place tasks in - [repo](https://github.com/dfpc-coe/vpc) |
-| `coe-ecs-<name>`      | ECS Cluster for API Service - [repo](https://github.com/dfpc-coe/ecs) |
+| `tak-vpc-<name>`      | VPC & networking to place tasks in - [repo](https://github.com/dfpc-coe/vpc) |
 | `coe-ecr-tak`         | ECR Repository for storing Server Images - [repo](https://github.com/dfpc-coe/ecr)     |
 
 ### 2. Install Tooling Dependencies
