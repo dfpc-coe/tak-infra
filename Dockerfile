@@ -17,7 +17,7 @@ EXPOSE 9001
 
 ENV NVM_DIR=/usr/local/nvm
 ENV NODE_VERSION=22
-ENV TAK_VERSION=takserver-docker-5.5-RELEASE-45
+ENV TAK_VERSION=takserver-docker-5.5-RELEASE-53
 
 RUN if [ ! -e "${TAK_VERSION}.zip" ]; then \
         wget "http://tak-server-releases.s3-website.us-gov-east-1.amazonaws.com/${TAK_VERSION}.zip"; \
