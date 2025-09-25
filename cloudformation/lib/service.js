@@ -43,22 +43,22 @@ export default {
             AllowedValues: ['true', 'false'],
             Default: 'false'
         },
-        LDAPDomain: {
-            Description: 'LDAP Domain',
+        LDAPDN: {
+            Description: 'LDAP DN',
             Type: 'String',
-            Default: 'example.com'
+            Default: 'dc=example,dc=com'
         },
         LDAPSecureUrl: {
             Description: 'LDAP Secure Connection URL',
             Type: 'String',
             Default: 'ldaps://example.com:636'
         },
-        LDAPUser: {
+        LDAPServiceUser: {
             Description: 'LDAP Bind User',
             Type: 'String',
             Default: 'cn=admin,dc=example,dc=com'
         },
-        LDAPUserPassword: {
+        LDAPServiceUserPassword: {
             Description: 'LDAP Bind User Password',
             Type: 'String',
             Default: 'password'
@@ -244,13 +244,16 @@ export default {
                         ContainerPort: 8089
                     }],
                     Environment: [{
-                        Name: 'LDAP_Domain',
-                        Value: cf.ref('LDAPDomain')
+                        Name: 'LDAP_DN',
+                        Value: cf.ref('LDAPDN')
                     },{
                         Name: 'LDAP_SECURE_URL',
                         Value: cf.ref('LDAPSecureUrl')
                     },{
-                        Name: 'LDAP_Password',
+                        Name: 'LDAP_SERVICE_USER',
+                        Value: cf.join(['uid=ldapsvcaccount,', cf.ref('LDAPDN')])
+                    },{
+                        Name: 'LDAP_SERVICE_USER_PASSWORD',
                         Value: cf.sub('{{resolve:secretsmanager:tak-auth-${Environment}/svc:SecretString:password:AWSCURRENT}}')
                     },{
                         Name: 'StackName',

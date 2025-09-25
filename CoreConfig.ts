@@ -16,8 +16,10 @@ for (const env of [
     'PostgresPassword',
     'PostgresURL',
     'TAK_VERSION',
-    'LDAP_DOMAIN',
-    'LDAP_SECURE_URL'
+    'LDAP_DN',
+    'LDAP_SECURE_URL',
+    'LDAP_SERVICE_USER',
+    'LDAP_SERVICE_USER_PASSWORD',
 ]) {
     if (!process.env[env]) {
         console.error(`${env} Environment Variable not set`);
@@ -130,8 +132,8 @@ CoreConfig.Configuration.auth.ldap = {
         groupprefix: '',
         groupNameExtractorRegex: 'CN=(.*?)(?:,|$)',
         style: 'DS',
-        serviceAccountDN: `ldapsvcaccount,${process.env.LDAP_DN}`,
-        serviceAccountCredential: process.env.LDAP_Password,
+        serviceAccountDN: process.env.LDAP_SERVICE_USER,
+        serviceAccountCredential: process.env.LDAP_SERVICE_USER_PASSWORD,
         groupObjectClass: 'groupOfNames',
         groupBaseRDN: `ou=Group,${process.env.LDAP_DN}`,
         ldapsTruststore: 'JKS',
