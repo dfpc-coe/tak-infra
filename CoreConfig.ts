@@ -10,34 +10,72 @@ import { diff } from 'json-diff-ts';
 import { execSync } from 'node:child_process';
 import * as xmljs from 'xml-js';
 
-for (const env of [
-    'HostedDomain',
-    'ConfigBucket',
-    'PostgresUsername',
-    'PostgresPassword',
-    'PostgresURL',
-    'TAK_VERSION',
-    'LDAP_DN',
-    'LDAP_SECURE_URL',
-    'LDAP_SERVICE_USER',
-    'LDAP_SERVICE_USER_PASSWORD',
-]) {
-    if (!process.env[env]) {
-        console.error(`${env} Environment Variable not set`);
-        process.exit(1);
+type BuildOptions = {
+    takdir: string,
+    version: string,
+    domain: string,
+    bucket: string,
+    stackName?: string,
+    awsRegion?: string,
+    organization?: string,
+    organizationalUnit?: string,
+    postgres: {
+        username: string,
+        password: string,
+        url: string
+    },
+    ldap: {
+        dn: string,
+        secureUrl: string,
+        serviceUser: string,
+        serviceUserPassword: string
     }
-}
+};
 
 if (import.meta.url === `file://${process.argv[1]}`) {
+    for (const env of [
+        'HostedDomain',
+        'ConfigBucket',
+        'PostgresUsername',
+        'PostgresPassword',
+        'PostgresURL',
+        'TAK_VERSION',
+        'LDAP_DN',
+        'LDAP_SECURE_URL',
+        'LDAP_SERVICE_USER',
+        'LDAP_SERVICE_USER_PASSWORD',
+    ]) {
+        if (!process.env[env]) {
+            console.error(`${env} Environment Variable not set`);
+            process.exit(1);
+        }
+    }
+
     await build({
-        takdir: '/opt/tak'
+        version: process.env.TAK_VERSION!,
+        takdir: '/opt/tak',
+        domain: process.env.HostedDomain!,
+        bucket: process.env.ConfigBucket!,
+        stackName: process.env.StackName,
+        awsRegion: process.env.AWS_REGION,
+        organization: process.env.ORGANIZATION,
+        organizationalUnit: process.env.ORGANIZATIONAL_UNIT,
+        postgres: {
+            username: process.env.PostgresUsername!,
+            password: process.env.PostgresPassword!,
+            url: process.env.PostgresURL!
+        },
+        ldap: {
+            dn: process.env.LDAP_DN!,
+            secureUrl: process.env.LDAP_SECURE_URL!,
+            serviceUser: process.env.LDAP_SERVICE_USER!,
+            serviceUserPassword: process.env.LDAP_SERVICE_USER_PASSWORD!
+        }
     });
 }
 
 export async function build(
-    opts: {
-        takdir: string
-    }
+    opts: BuildOptions
 ) {
     // Get AWS Root CA as the LDAP Stack is behind an NLB with an AWS Cert
     const Amazon_Root_Cert = await (await fetch('https://www.amazontrust.com/repository/AmazonRootCA1.pem')).text();
@@ -47,24 +85,28 @@ export async function build(
         stdio: 'inherit'
     });
 
-    await fsp.copyFile('/tmp/AmazonRootCA1.jks', `${opt.takdir}/certs/files/aws-acm-root.jks`);
+    await fsp.copyFile('/tmp/AmazonRootCA1.jks', `${opts.takdir}/certs/files/aws-acm-root.jks`);
 
     let CoreConfig: Static<typeof CoreConfigType> | null = null;
 
-    const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+    const s3 = new S3Client({ region: opts.awsRegion || 'us-east-1' });
 
     try {
         const RemoteConfig = await s3.send(new GetObjectCommand({
-            Bucket: process.env.ConfigBucket,
+            Bucket: opts.bucket,
             Key: 'CoreConfig.xml'
         }));
+
+        if (!RemoteConfig.Body) {
+            throw new Error('Remote CoreConfig object contained no body');
+        }
 
         const bodyContents = await RemoteConfig.Body.transformToString();
         CoreConfig = xmljs.xml2js(bodyContents, {
             compact: true
         }) as Static<typeof CoreConfigType>;
     } catch (err) {
-        if (err.name === 'NoSuchKey') {
+        if (isErrorWithName(err, 'NoSuchKey')) {
             console.error('CoreConfig.xml not found in S3 Bucket - Generating');
 
             CoreConfig = xmljs.xml2js(fs.readFileSync('./CoreConfig.base.xml', 'utf-8'), {
@@ -100,12 +142,12 @@ export async function build(
         CoreConfig.Configuration.network._attributes.serverId = randomUUID();
     }
 
-    if (!CoreConfig.Configuration.network._attributes.version || CoreConfig.Configuration.network._attributes.version !== process.env.TAK_VERSION) {
-        CoreConfig.Configuration.network._attributes.version = process.env.TAK_VERSION;
+    if (!CoreConfig.Configuration.network._attributes.version || CoreConfig.Configuration.network._attributes.version !== opts.version) {
+        CoreConfig.Configuration.network._attributes.version = opts.version;
     }
 
     CoreConfig.Configuration.network._attributes.cloudwatchEnable = true;
-    CoreConfig.Configuration.network._attributes.cloudwatchName = process.env.StackName;
+    CoreConfig.Configuration.network._attributes.cloudwatchName = opts.stackName;
 
     CoreConfig.Configuration.network.connector = [];
 
@@ -114,7 +156,7 @@ export async function build(
             port: 8443,
             _name: 'https',
             keystore: 'JKS',
-            keystoreFile: `${opts.takdir}/certs/files/${process.env.HostedDomain}/letsencrypt.jks`,
+            keystoreFile: `${opts.takdir}/certs/files/${opts.domain}/letsencrypt.jks`,
             keystorePass: 'atakatak',
             enableNonAdminUI:false,
             enableAdminUI: true,
@@ -128,7 +170,7 @@ export async function build(
             clientAuth: false,
             _name: 'cert_https',
             keystore: 'JKS',
-            keystoreFile: `${opts.takdir}/certs/files/${process.env.HostedDomain}/letsencrypt.jks`,
+            keystoreFile: `${opts.takdir}/certs/files/${opts.domain}/letsencrypt.jks`,
             keystorePass: 'atakatak',
             enableNonAdminUI: false,
             enableAdminUI: true,
@@ -138,16 +180,16 @@ export async function build(
 
     CoreConfig.Configuration.auth.ldap = {
         _attributes: {
-            url: process.env.LDAP_SECURE_URL,
-            userstring: `uid={username},ou=People,${process.env.LDAP_DN}`,
+            url: opts.ldap.secureUrl,
+            userstring: `uid={username},ou=People,${opts.ldap.dn}`,
             updateinterval: 60,
             groupprefix: '',
             groupNameExtractorRegex: 'CN=(.*?)(?:,|$)',
             style: 'DS',
-            serviceAccountDN: process.env.LDAP_SERVICE_USER,
-            serviceAccountCredential: process.env.LDAP_SERVICE_USER_PASSWORD,
+            serviceAccountDN: opts.ldap.serviceUser,
+            serviceAccountCredential: opts.ldap.serviceUserPassword,
             groupObjectClass: 'groupOfNames',
-            groupBaseRDN: `ou=Group,${process.env.LDAP_DN}`,
+            groupBaseRDN: `ou=Group,${opts.ldap.dn}`,
             ldapsTruststore: 'JKS',
             ldapsTruststoreFile: `${opts.takdir}/certs/files/aws-acm-root.jks`,
             ldapsTruststorePass: 'INTENTIONALLY_NOT_SENSITIVE',
@@ -157,9 +199,9 @@ export async function build(
 
     CoreConfig.Configuration.repository.connection = {
         _attributes: {
-            url: `jdbc:${process.env.PostgresURL}`,
-            username: process.env.PostgresUsername,
-            password: process.env.PostgresPassword
+            url: `jdbc:${opts.postgres.url}`,
+            username: opts.postgres.username,
+            password: opts.postgres.password
         }
     };
 
@@ -172,12 +214,12 @@ export async function build(
                 nameEntry: [{
                     _attributes: {
                         name: 'O',
-                        value: process.env.ORGANIZATION
+                        value: opts.organization ?? ''
                     }
                 },{
                     _attributes: {
                         name: 'OU',
-                        value: process.env.ORGANIZATIONAL_UNIT
+                        value: opts.organizationalUnit ?? ''
                     }
                 }]
             }
@@ -231,18 +273,23 @@ export async function build(
         console.warn('No Network Connectors Found');
     }
 
-    if (CoreConfig.Configuration.certificateSigning.TAKServerCAConfig) {
+    const certificateSigning = CoreConfig.Configuration.certificateSigning;
+    if (certificateSigning?.TAKServerCAConfig) {
         validateKeystore(
-            CoreConfig.Configuration.certificateSigning.TAKServerCAConfig._attributes.keystoreFile,
-            CoreConfig.Configuration.certificateSigning.TAKServerCAConfig._attributes.keystorePass
+            certificateSigning.TAKServerCAConfig._attributes.keystoreFile,
+            certificateSigning.TAKServerCAConfig._attributes.keystorePass
         );
     }
 
     if (CoreConfig.Configuration.auth.ldap) {
-        validateKeystore(
-            CoreConfig.Configuration.auth.ldap._attributes.ldapsTruststoreFile,
-            CoreConfig.Configuration.auth.ldap._attributes.ldapsTruststorePass
-        );
+        const {
+            ldapsTruststoreFile,
+            ldapsTruststorePass
+        } = CoreConfig.Configuration.auth.ldap._attributes;
+
+        if (ldapsTruststoreFile && ldapsTruststorePass) {
+            validateKeystore(ldapsTruststoreFile, ldapsTruststorePass);
+        }
     }
 
     if (CoreConfig.Configuration.security) {
@@ -291,7 +338,7 @@ export async function build(
             }));
 
             await s3.send(new PutObjectCommand({
-                Bucket: process.env.ConfigBucket,
+                Bucket: opts.bucket,
                 Key: 'CoreConfig.xml',
                 Body: fs.createReadStream(`${opts.takdir}/CoreConfig.xml`)
             }));
@@ -300,14 +347,14 @@ export async function build(
         }
 
     } catch (err) {
-        if (err.code === 'ENOENT') {
+        if (isNodeError(err) && err.code === 'ENOENT') {
             console.log('ok - TAK Server - No existing CoreConfig.xml, creating new one');
             await fsp.writeFile(`${opts.takdir}/CoreConfig.xml`, xmljs.js2xml(CoreConfig, {
                 compact: true
             }));
 
             await s3.send(new PutObjectCommand({
-                Bucket: process.env.ConfigBucket,
+                Bucket: opts.bucket,
                 Key: 'CoreConfig.xml',
                 Body: fs.createReadStream(`${opts.takdir}/CoreConfig.xml`)
             }));
@@ -317,8 +364,16 @@ export async function build(
     }
 }
 
-function validateKeystore(file, pass) {
+function validateKeystore(file: string, pass: string) {
     fs.accessSync(file);
     const jksBuffer = fs.readFileSync(file);
     toPem(jksBuffer, pass);
+}
+
+function isErrorWithName(error: unknown, name: string): error is { name: string } {
+    return typeof error === 'object' && error !== null && 'name' in error && (error as { name?: string }).name === name;
+}
+
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+    return typeof error === 'object' && error !== null && 'code' in error;
 }

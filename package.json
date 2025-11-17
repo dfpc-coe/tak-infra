@@ -8,7 +8,7 @@
         "lint": "eslint CoreConfig.ts cloudformation/ src/",
         "build": "node ./bin/build.js",
         "check": "tsc -t es2022 -m es2022 --moduleResolution node --noEmit CoreConfig.ts",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "c8 --reporter=lcov --reporter html tsx --test test/*.ts"
     },
     "engines": {
         "node": ">= 22"
@@ -30,7 +30,6 @@
         "@sinclair/typebox": "^0.34.33",
         "jks-js": "^1.1.4",
         "json-diff-ts": "^4.2.3",
-        "tsx": "^4.19.3",
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.31.0",
         "xml-js": "^1.6.11"
@@ -39,7 +38,9 @@
         "@openaddresses/batch-alarms": "^4.9.2",
         "@openaddresses/deploy": "^9.0.0",
         "@types/node": "^24.0.0",
+        "c8": "^10.1.3",
         "eslint": "^9.1.1",
-        "eslint-plugin-n": "^17.4.0"
+        "eslint-plugin-n": "^17.4.0",
+        "tsx": "^4.20.6"
     }
 }
