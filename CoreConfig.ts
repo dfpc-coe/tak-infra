@@ -28,280 +28,292 @@ for (const env of [
     }
 }
 
-// Get AWS Root CA as the LDAP Stack is behind an NLB with an AWS Cert
-const Amazon_Root_Cert = await (await fetch('https://www.amazontrust.com/repository/AmazonRootCA1.pem')).text();
-await fsp.writeFile('/tmp/AmazonRootCA1.pem', Amazon_Root_Cert);
+if (import.meta.url === `file://${process.argv[1]}`) {
+    await build({
+        takdir: '/opt/tak'
+    });
+}
 
-execSync('yes | keytool -import -file /tmp/AmazonRootCA1.pem -alias AWS -deststoretype JKS -deststorepass INTENTIONALLY_NOT_SENSITIVE -keystore /tmp/AmazonRootCA1.jks', {
-    stdio: 'inherit'
-});
+export async function build(
+    opts: {
+        takdir: string
+    }
+) {
+    // Get AWS Root CA as the LDAP Stack is behind an NLB with an AWS Cert
+    const Amazon_Root_Cert = await (await fetch('https://www.amazontrust.com/repository/AmazonRootCA1.pem')).text();
+    await fsp.writeFile('/tmp/AmazonRootCA1.pem', Amazon_Root_Cert);
 
-await fsp.copyFile('/tmp/AmazonRootCA1.jks', '/opt/tak/certs/files/aws-acm-root.jks');
+    execSync('yes | keytool -import -file /tmp/AmazonRootCA1.pem -alias AWS -deststoretype JKS -deststorepass INTENTIONALLY_NOT_SENSITIVE -keystore /tmp/AmazonRootCA1.jks', {
+        stdio: 'inherit'
+    });
 
-let CoreConfig: Static<typeof CoreConfigType> | null = null;
+    await fsp.copyFile('/tmp/AmazonRootCA1.jks', `${opt.takdir}/certs/files/aws-acm-root.jks`);
 
-const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+    let CoreConfig: Static<typeof CoreConfigType> | null = null;
 
-try {
-    const RemoteConfig = await s3.send(new GetObjectCommand({
-        Bucket: process.env.ConfigBucket,
-        Key: 'CoreConfig.xml'
-    }));
+    const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
-    const bodyContents = await RemoteConfig.Body.transformToString();
-    CoreConfig = xmljs.xml2js(bodyContents, {
-        compact: true
-    }) as Static<typeof CoreConfigType>;
-} catch (err) {
-    if (err.name === 'NoSuchKey') {
-        console.error('CoreConfig.xml not found in S3 Bucket - Generating');
+    try {
+        const RemoteConfig = await s3.send(new GetObjectCommand({
+            Bucket: process.env.ConfigBucket,
+            Key: 'CoreConfig.xml'
+        }));
 
-        CoreConfig = xmljs.xml2js(fs.readFileSync('./CoreConfig.base.xml', 'utf-8'), {
+        const bodyContents = await RemoteConfig.Body.transformToString();
+        CoreConfig = xmljs.xml2js(bodyContents, {
             compact: true
         }) as Static<typeof CoreConfigType>;
-    } else {
+    } catch (err) {
+        if (err.name === 'NoSuchKey') {
+            console.error('CoreConfig.xml not found in S3 Bucket - Generating');
+
+            CoreConfig = xmljs.xml2js(fs.readFileSync('./CoreConfig.base.xml', 'utf-8'), {
+                compact: true
+            }) as Static<typeof CoreConfigType>;
+        } else {
+            throw err;
+        }
+    }
+
+    if (!CoreConfig) throw new Error('Failed to load Remote CoreConfig');
+
+    try {
+        // Ensure seperate objects are created as CoreConfig will be mutated if there are
+        // Stack Config values that chage
+        CoreConfig = TypeValidator.type(
+            CoreConfigType,
+            CoreConfig,
+            {
+                clean: false,
+                verbose: true,
+                convert: true,
+                default: true
+            }
+        );
+
+    } catch (err) {
+        console.error('CoreConfig.xml is invalid, refusing to start');
         throw err;
     }
-}
 
-if (!CoreConfig) throw new Error('Failed to load Remote CoreConfig');
-
-try {
-    // Ensure seperate objects are created as CoreConfig will be mutated if there are
-    // Stack Config values that chage
-    CoreConfig = TypeValidator.type(
-        CoreConfigType,
-        CoreConfig,
-        {
-            clean: false,
-            verbose: true,
-            convert: true,
-            default: true
-        }
-    );
-
-} catch (err) {
-    console.error('CoreConfig.xml is invalid, refusing to start');
-    throw err;
-}
-
-if (CoreConfig.Configuration.network._attributes.serverId === 'REPLACE_ME') {
-    CoreConfig.Configuration.network._attributes.serverId = randomUUID();
-}
-
-if (!CoreConfig.Configuration.network._attributes.version || CoreConfig.Configuration.network._attributes.version !== process.env.TAK_VERSION) {
-    CoreConfig.Configuration.network._attributes.version = process.env.TAK_VERSION;
-}
-
-CoreConfig.Configuration.network._attributes.cloudwatchEnable = true;
-CoreConfig.Configuration.network._attributes.cloudwatchName = process.env.StackName;
-
-CoreConfig.Configuration.network.connector = [];
-
-CoreConfig.Configuration.network.connector.push({
-    _attributes: {
-        port: 8443,
-        _name: 'https',
-        keystore: 'JKS',
-        keystoreFile: `/opt/tak/certs/files/${process.env.HostedDomain}/letsencrypt.jks`,
-        keystorePass: 'atakatak',
-        enableNonAdminUI:false,
-        enableAdminUI: true,
-        enableWebtak: true
+    if (CoreConfig.Configuration.network._attributes.serverId === 'REPLACE_ME') {
+        CoreConfig.Configuration.network._attributes.serverId = randomUUID();
     }
-});
 
-CoreConfig.Configuration.network.connector.push({
-    _attributes: {
-        port: 8446,
-        clientAuth: false,
-        _name: 'cert_https',
-        keystore: 'JKS',
-        keystoreFile: `/opt/tak/certs/files/${process.env.HostedDomain}/letsencrypt.jks`,
-        keystorePass: 'atakatak',
-        enableNonAdminUI: false,
-        enableAdminUI: true,
-        enableWebtak: true
+    if (!CoreConfig.Configuration.network._attributes.version || CoreConfig.Configuration.network._attributes.version !== process.env.TAK_VERSION) {
+        CoreConfig.Configuration.network._attributes.version = process.env.TAK_VERSION;
     }
-});
 
-CoreConfig.Configuration.auth.ldap = {
-    _attributes: {
-        url: process.env.LDAP_SECURE_URL,
-        userstring: `uid={username},ou=People,${process.env.LDAP_DN}`,
-        updateinterval: 60,
-        groupprefix: '',
-        groupNameExtractorRegex: 'CN=(.*?)(?:,|$)',
-        style: 'DS',
-        serviceAccountDN: process.env.LDAP_SERVICE_USER,
-        serviceAccountCredential: process.env.LDAP_SERVICE_USER_PASSWORD,
-        groupObjectClass: 'groupOfNames',
-        groupBaseRDN: `ou=Group,${process.env.LDAP_DN}`,
-        ldapsTruststore: 'JKS',
-        ldapsTruststoreFile: '/opt/tak/certs/files/aws-acm-root.jks',
-        ldapsTruststorePass: 'INTENTIONALLY_NOT_SENSITIVE',
-        enableConnectionPool: false
-    }
-};
+    CoreConfig.Configuration.network._attributes.cloudwatchEnable = true;
+    CoreConfig.Configuration.network._attributes.cloudwatchName = process.env.StackName;
 
-CoreConfig.Configuration.repository.connection = {
-    _attributes: {
-        url: `jdbc:${process.env.PostgresURL}`,
-        username: process.env.PostgresUsername,
-        password: process.env.PostgresPassword
-    }
-};
+    CoreConfig.Configuration.network.connector = [];
 
-CoreConfig.Configuration.certificateSigning = {
-    _attributes: {
-        CA: 'TAKServer'
-    },
-    certificateConfig: {
-        nameEntries: {
-            nameEntry: [{
-                _attributes: {
-                    name: 'O',
-                    value: process.env.ORGANIZATION
-                }
-            },{
-                _attributes: {
-                    name: 'OU',
-                    value: process.env.ORGANIZATIONAL_UNIT
-                }
-            }]
-        }
-    },
-    TAKServerCAConfig: {
+    CoreConfig.Configuration.network.connector.push({
         _attributes: {
+            port: 8443,
+            _name: 'https',
             keystore: 'JKS',
-            keystoreFile: '/opt/tak/certs/files/intermediate-ca-signing.jks',
+            keystoreFile: `${opts.takdir}/certs/files/${process.env.HostedDomain}/letsencrypt.jks`,
             keystorePass: 'atakatak',
-            validityDays: '365',
-            signatureAlg: 'SHA256WithRSA',
-            CAkey: '/opt/tak/certs/files/intermediate-ca-signing',
-            CAcertificate: '/opt/tak/certs/files/intermediate-ca-signing'
+            enableNonAdminUI:false,
+            enableAdminUI: true,
+            enableWebtak: true
         }
-    }
-};
+    });
 
-CoreConfig.Configuration.security = {
-    tls: {
+    CoreConfig.Configuration.network.connector.push({
         _attributes: {
+            port: 8446,
+            clientAuth: false,
+            _name: 'cert_https',
             keystore: 'JKS',
-            keystoreFile: '/opt/tak/certs/files/takserver.jks',
+            keystoreFile: `${opts.takdir}/certs/files/${process.env.HostedDomain}/letsencrypt.jks`,
             keystorePass: 'atakatak',
-            truststore: 'JKS',
-            truststoreFile: '/opt/tak/certs/files/truststore-intermediate-ca.jks',
-            truststorePass: 'atakatak',
-            context: 'TLSv1.2',
-            keymanager: 'SunX509'
+            enableNonAdminUI: false,
+            enableAdminUI: true,
+            enableWebtak: true
         }
-    },
-    missionTls: {
+    });
+
+    CoreConfig.Configuration.auth.ldap = {
         _attributes: {
-            keystore: 'JKS',
-            keystoreFile: '/opt/tak/certs/files/truststore-root.jks',
-            keystorePass: 'atakatak'
+            url: process.env.LDAP_SECURE_URL,
+            userstring: `uid={username},ou=People,${process.env.LDAP_DN}`,
+            updateinterval: 60,
+            groupprefix: '',
+            groupNameExtractorRegex: 'CN=(.*?)(?:,|$)',
+            style: 'DS',
+            serviceAccountDN: process.env.LDAP_SERVICE_USER,
+            serviceAccountCredential: process.env.LDAP_SERVICE_USER_PASSWORD,
+            groupObjectClass: 'groupOfNames',
+            groupBaseRDN: `ou=Group,${process.env.LDAP_DN}`,
+            ldapsTruststore: 'JKS',
+            ldapsTruststoreFile: `${opts.takdir}/certs/files/aws-acm-root.jks`,
+            ldapsTruststorePass: 'INTENTIONALLY_NOT_SENSITIVE',
+            enableConnectionPool: false
+        }
+    };
+
+    CoreConfig.Configuration.repository.connection = {
+        _attributes: {
+            url: `jdbc:${process.env.PostgresURL}`,
+            username: process.env.PostgresUsername,
+            password: process.env.PostgresPassword
+        }
+    };
+
+    CoreConfig.Configuration.certificateSigning = {
+        _attributes: {
+            CA: 'TAKServer'
+        },
+        certificateConfig: {
+            nameEntries: {
+                nameEntry: [{
+                    _attributes: {
+                        name: 'O',
+                        value: process.env.ORGANIZATION
+                    }
+                },{
+                    _attributes: {
+                        name: 'OU',
+                        value: process.env.ORGANIZATIONAL_UNIT
+                    }
+                }]
+            }
+        },
+        TAKServerCAConfig: {
+            _attributes: {
+                keystore: 'JKS',
+                keystoreFile: `${opts.takdir}/certs/files/intermediate-ca-signing.jks`,
+                keystorePass: 'atakatak',
+                validityDays: '365',
+                signatureAlg: 'SHA256WithRSA',
+                CAkey: `${opts.takdir}/certs/files/intermediate-ca-signing`,
+                CAcertificate: `${opts.takdir}/certs/files/intermediate-ca-signing`
+            }
+        }
+    };
+
+    CoreConfig.Configuration.security = {
+        tls: {
+            _attributes: {
+                keystore: 'JKS',
+                keystoreFile: `${opts.takdir}/certs/files/takserver.jks`,
+                keystorePass: 'atakatak',
+                truststore: 'JKS',
+                truststoreFile: `${opts.takdir}/certs/files/truststore-intermediate-ca.jks`,
+                truststorePass: 'atakatak',
+                context: 'TLSv1.2',
+                keymanager: 'SunX509'
+            }
+        },
+        missionTls: {
+            _attributes: {
+                keystore: 'JKS',
+                keystoreFile: `${opts.takdir}/certs/files/truststore-root.jks`,
+                keystorePass: 'atakatak'
+            }
         }
     }
-}
 
-if (CoreConfig.Configuration.network.connector) {
-    if (!Array.isArray(CoreConfig.Configuration.network.connector)) {
-        CoreConfig.Configuration.network.connector = [ CoreConfig.Configuration.network.connector];
-    }
-
-    for (const connector of CoreConfig.Configuration.network.connector) {
-        if (connector._attributes.keystoreFile && connector._attributes.keystorePass) {
-            validateKeystore(connector._attributes.keystoreFile, connector._attributes.keystorePass);
+    if (CoreConfig.Configuration.network.connector) {
+        if (!Array.isArray(CoreConfig.Configuration.network.connector)) {
+            CoreConfig.Configuration.network.connector = [ CoreConfig.Configuration.network.connector];
         }
+
+        for (const connector of CoreConfig.Configuration.network.connector) {
+            if (connector._attributes.keystoreFile && connector._attributes.keystorePass) {
+                validateKeystore(connector._attributes.keystoreFile, connector._attributes.keystorePass);
+            }
+        }
+    } else {
+        console.warn('No Network Connectors Found');
     }
-} else {
-    console.warn('No Network Connectors Found');
-}
 
-if (CoreConfig.Configuration.certificateSigning.TAKServerCAConfig) {
-    validateKeystore(
-        CoreConfig.Configuration.certificateSigning.TAKServerCAConfig._attributes.keystoreFile,
-        CoreConfig.Configuration.certificateSigning.TAKServerCAConfig._attributes.keystorePass
-    );
-}
-
-if (CoreConfig.Configuration.auth.ldap) {
-    validateKeystore(
-        CoreConfig.Configuration.auth.ldap._attributes.ldapsTruststoreFile,
-        CoreConfig.Configuration.auth.ldap._attributes.ldapsTruststorePass
-    );
-}
-
-if (CoreConfig.Configuration.security) {
-    if (CoreConfig.Configuration.security.tls) {
+    if (CoreConfig.Configuration.certificateSigning.TAKServerCAConfig) {
         validateKeystore(
-            CoreConfig.Configuration.security.tls._attributes.keystoreFile,
-            CoreConfig.Configuration.security.tls._attributes.keystorePass
+            CoreConfig.Configuration.certificateSigning.TAKServerCAConfig._attributes.keystoreFile,
+            CoreConfig.Configuration.certificateSigning.TAKServerCAConfig._attributes.keystorePass
         );
     }
 
-    if (CoreConfig.Configuration.security.missionTls) {
+    if (CoreConfig.Configuration.auth.ldap) {
         validateKeystore(
-            CoreConfig.Configuration.security.missionTls._attributes.keystoreFile,
-            CoreConfig.Configuration.security.missionTls._attributes.keystorePass
+            CoreConfig.Configuration.auth.ldap._attributes.ldapsTruststoreFile,
+            CoreConfig.Configuration.auth.ldap._attributes.ldapsTruststorePass
         );
     }
-}
 
-const xml = xmljs.js2xml(CoreConfig, {
-    spaces: 4,
-    compact: true
-});
+    if (CoreConfig.Configuration.security) {
+        if (CoreConfig.Configuration.security.tls) {
+            validateKeystore(
+                CoreConfig.Configuration.security.tls._attributes.keystoreFile,
+                CoreConfig.Configuration.security.tls._attributes.keystorePass
+            );
+        }
 
-fs.writeFileSync(
-    '/opt/tak/CoreConfig.xml',
-    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n${xml}`
-);
+        if (CoreConfig.Configuration.security.missionTls) {
+            validateKeystore(
+                CoreConfig.Configuration.security.missionTls._attributes.keystoreFile,
+                CoreConfig.Configuration.security.missionTls._attributes.keystorePass
+            );
+        }
+    }
 
-try {
-    console.log('ok - TAK Server - Checking for Diff in CoreConfig.xml');
-
-    await fsp.stat('/opt/tak/CoreConfig.xml');
-
-    const LocalCoreConfig = xmljs.xml2js(fs.readFileSync('./CoreConfig.base.xml', 'utf-8'), {
+    const xml = xmljs.js2xml(CoreConfig, {
+        spaces: 4,
         compact: true
-    }) as Static<typeof CoreConfigType>;
+    });
 
-    const diffs = diff(CoreConfig, LocalCoreConfig);
+    fs.writeFileSync(
+        `${opts.takdir}/CoreConfig.xml`,
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n${xml}`
+    );
 
-    if (diffs.length > 0) {
-        console.log('ok - TAK Server - CoreConfig.xml change detected');
-        console.log(diffs.join('\n'));
+    try {
+        console.log('ok - TAK Server - Checking for Diff in CoreConfig.xml');
 
-        await fsp.writeFile('/opt/tak/CoreConfig.xml', xmljs.js2xml(CoreConfig, {
+        await fsp.stat(`${opts.takdir}/CoreConfig.xml`);
+
+        const LocalCoreConfig = xmljs.xml2js(fs.readFileSync('./CoreConfig.base.xml', 'utf-8'), {
             compact: true
-        }));
+        }) as Static<typeof CoreConfigType>;
 
-        await s3.send(new PutObjectCommand({
-            Bucket: process.env.ConfigBucket,
-            Key: 'CoreConfig.xml',
-            Body: fs.createReadStream('/opt/tak/CoreConfig.xml')
-        }));
-    } else {
-        console.log('ok - TAK Server - No CoreConfig.xml change detected');
-    }
+        const diffs = diff(CoreConfig, LocalCoreConfig);
 
-} catch (err) {
-    if (err.code === 'ENOENT') {
-        console.log('ok - TAK Server - No existing CoreConfig.xml, creating new one');
-        await fsp.writeFile('/opt/tak/CoreConfig.xml', xmljs.js2xml(CoreConfig, {
-            compact: true
-        }));
+        if (diffs.length > 0) {
+            console.log('ok - TAK Server - CoreConfig.xml change detected');
+            console.log(diffs.join('\n'));
 
-        await s3.send(new PutObjectCommand({
-            Bucket: process.env.ConfigBucket,
-            Key: 'CoreConfig.xml',
-            Body: fs.createReadStream('/opt/tak/CoreConfig.xml')
-        }));
-    } else {
-        throw err;
+            await fsp.writeFile(`${opts.takdir}/CoreConfig.xml`, xmljs.js2xml(CoreConfig, {
+                compact: true
+            }));
+
+            await s3.send(new PutObjectCommand({
+                Bucket: process.env.ConfigBucket,
+                Key: 'CoreConfig.xml',
+                Body: fs.createReadStream(`${opts.takdir}/CoreConfig.xml`)
+            }));
+        } else {
+            console.log('ok - TAK Server - No CoreConfig.xml change detected');
+        }
+
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            console.log('ok - TAK Server - No existing CoreConfig.xml, creating new one');
+            await fsp.writeFile(`${opts.takdir}/CoreConfig.xml`, xmljs.js2xml(CoreConfig, {
+                compact: true
+            }));
+
+            await s3.send(new PutObjectCommand({
+                Bucket: process.env.ConfigBucket,
+                Key: 'CoreConfig.xml',
+                Body: fs.createReadStream(`${opts.takdir}/CoreConfig.xml`)
+            }));
+        } else {
+            throw err;
+        }
     }
 }
 
