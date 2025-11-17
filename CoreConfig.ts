@@ -12,6 +12,7 @@ import * as xmljs from 'xml-js';
 
 for (const env of [
     'HostedDomain',
+    'ConfigBucket',
     'PostgresUsername',
     'PostgresPassword',
     'PostgresURL',

@@ -16,7 +16,7 @@ EXPOSE 9001
 
 
 ENV NVM_DIR=/usr/local/nvm
-ENV NODE_VERSION=22
+ENV NODE_VERSION=24
 ENV TAK_VERSION=takserver-docker-5.5-RELEASE-53
 
 RUN if [ ! -e "${TAK_VERSION}.zip" ]; then \
@@ -29,11 +29,12 @@ RUN unzip "./${TAK_VERSION}.zip" \
     && rm -rf "./${TAK_VERSION}"
 
 RUN mkdir -p $NVM_DIR \
-    && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash \
+    && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash \
     && . $NVM_DIR/nvm.sh \
     && nvm install $NODE_VERSION \
     && nvm alias default $NODE_VERSION \
     && nvm use default \
-    && npm install
+    && npm install \
+    && npm install -g npm@11
 
 ENTRYPOINT ["/bin/bash", "-c", "/opt/tak/start"]

@@ -127,11 +127,11 @@ export default {
             Value: cf.ref('ServiceSecurityGroup')
         },
         Hosted: {
-            Description: 'Hosted API Location',
+            Description: 'Hosted API DNS Location',
             Export: {
                 Name: cf.join([cf.stackName, '-hosted'])
             },
-            Value: cf.join(['https://', cf.ref('SubdomainPrefix'), '.', cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-hosted-zone-name']))])
+            Value: cf.join([cf.ref('SubdomainPrefix'), '.', cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-hosted-zone-name']))])
         },
         ELB: {
             Description: 'ELB ARN',

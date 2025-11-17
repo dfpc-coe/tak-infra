@@ -259,7 +259,7 @@ export default {
                         Name: 'StackName',
                         Value: cf.stackName
                     },{
-                        Name: 'ClusterBucket',
+                        Name: 'ConfigBucket',
                         Value: cf.join('-', ['tak-server-network', cf.ref('Environment'), cf.accountId, cf.region])
                     },{
                         Name: 'Environment',
