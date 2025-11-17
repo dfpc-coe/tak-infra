@@ -1,11 +1,13 @@
 import { build } from '../CoreConfig.js';
-import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import sinon from 'sinon';
 import * as fsp from 'node:fs/promises';
+import * as fs from 'node:fs';
+import * as childProcess from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import * as xmljs from 'xml-js';
+import { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import * as jks from 'jks-js';
 
 const REQUIRED_ENV: Record<string, string> = {
     HostedDomain: 'test.local',
@@ -25,15 +27,53 @@ const REQUIRED_ENV: Record<string, string> = {
 };
 
 test('CoreConfig Build', async (t) => {
-    const takdir = await fsp.mkdtemp(join(tmpdir(), Math.random().toString(36).substring(2, 15)));
+    const sandbox = sinon.createSandbox();
+
+    const takdir = await fsp.mkdtemp(join(tmpdir(), 'tak-'));
+    const tmpWorkingDir = await fsp.mkdtemp(join(tmpdir(), 'tmp-'));
 
     t.after(async () => {
-        await fsp.rm(takdir, { recursive: true, force: true });
+        sandbox.restore();
+        await Promise.all([
+            fsp.rm(takdir, { recursive: true, force: true }),
+            fsp.rm(tmpWorkingDir, { recursive: true, force: true })
+        ]);
     });
+
+    sandbox.stub(S3Client.prototype, 'send').callsFake(async (command: unknown) => {
+        if (command instanceof GetObjectCommand) {
+            const error = new Error('NoSuchKey');
+            (error as Error & { name: string }).name = 'NoSuchKey';
+            throw error;
+        }
+
+        if (command instanceof ListObjectsCommand || command instanceof ListObjectsV2Command) {
+            return { Contents: [] };
+        }
+
+        if (command instanceof PutObjectCommand) {
+            return {};
+        }
+
+        return {};
+    });
+
+    const keystoreFiles = [
+        join(takdir, 'certs/files', REQUIRED_ENV.HostedDomain, 'letsencrypt.jks'),
+        join(takdir, 'certs/files', 'intermediate-ca-signing.jks'),
+        join(takdir, 'certs/files', 'takserver.jks'),
+        join(takdir, 'certs/files', 'truststore-intermediate-ca.jks'),
+        join(takdir, 'certs/files', 'truststore-root.jks')
+    ];
+
+    await Promise.all(keystoreFiles.map(async (file) => {
+        await fsp.mkdir(dirname(file), { recursive: true });
+        await fsp.writeFile(file, 'fake-keystore');
+    }));
 
     await build({
         takdir,
-        tmpdir: takdir,
+        tmpdir: tmpWorkingDir,
         version: REQUIRED_ENV.TAK_VERSION,
         domain: REQUIRED_ENV.HostedDomain,
         bucket: REQUIRED_ENV.ConfigBucket,
