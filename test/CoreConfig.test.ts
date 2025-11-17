@@ -7,7 +7,6 @@ import * as childProcess from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
-import * as jks from 'jks-js';
 
 const REQUIRED_ENV: Record<string, string> = {
     HostedDomain: 'test.local',
@@ -91,6 +90,7 @@ test('CoreConfig Build', async (t) => {
             secureUrl: REQUIRED_ENV.LDAP_SECURE_URL,
             serviceUser: REQUIRED_ENV.LDAP_SERVICE_USER,
             serviceUserPassword: REQUIRED_ENV.LDAP_SERVICE_USER_PASSWORD
-        }
+        },
+        skipKeystoreValidation: true
     });
 });

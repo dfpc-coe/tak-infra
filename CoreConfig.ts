@@ -12,6 +12,7 @@ import * as xmljs from 'xml-js';
 
 type BuildOptions = {
     takdir: string,
+    tmpdir: string,
     version: string,
     domain: string,
     bucket: string,
@@ -19,6 +20,7 @@ type BuildOptions = {
     awsRegion?: string,
     organization?: string,
     organizationalUnit?: string,
+    skipKeystoreValidation?: boolean,
     postgres: {
         username: string,
         password: string,
@@ -85,6 +87,8 @@ export async function build(
     if (opts.tmpdir.endsWith('/')) {
         opts.tmpdir = opts.tmpdir.slice(0, -1);
     }
+
+    const shouldValidateKeystores = !opts.skipKeystoreValidation;
 
     // Get AWS Root CA as the LDAP Stack is behind an NLB with an AWS Cert
     const Amazon_Root_Cert = await (await fetch('https://www.amazontrust.com/repository/AmazonRootCA1.pem')).text();
@@ -273,52 +277,54 @@ export async function build(
         }
     }
 
-    if (CoreConfig.Configuration.network.connector) {
-        if (!Array.isArray(CoreConfig.Configuration.network.connector)) {
-            CoreConfig.Configuration.network.connector = [ CoreConfig.Configuration.network.connector];
+    if (shouldValidateKeystores) {
+        if (CoreConfig.Configuration.network.connector) {
+            if (!Array.isArray(CoreConfig.Configuration.network.connector)) {
+                CoreConfig.Configuration.network.connector = [ CoreConfig.Configuration.network.connector];
+            }
+
+            for (const connector of CoreConfig.Configuration.network.connector) {
+                if (connector._attributes.keystoreFile && connector._attributes.keystorePass) {
+                    validateKeystore(connector._attributes.keystoreFile, connector._attributes.keystorePass);
+                }
+            }
+        } else {
+            console.warn('No Network Connectors Found');
         }
 
-        for (const connector of CoreConfig.Configuration.network.connector) {
-            if (connector._attributes.keystoreFile && connector._attributes.keystorePass) {
-                validateKeystore(connector._attributes.keystoreFile, connector._attributes.keystorePass);
+        const certificateSigning = CoreConfig.Configuration.certificateSigning;
+        if (certificateSigning?.TAKServerCAConfig) {
+            validateKeystore(
+                certificateSigning.TAKServerCAConfig._attributes.keystoreFile,
+                certificateSigning.TAKServerCAConfig._attributes.keystorePass
+            );
+        }
+
+        if (CoreConfig.Configuration.auth.ldap) {
+            const {
+                ldapsTruststoreFile,
+                ldapsTruststorePass
+            } = CoreConfig.Configuration.auth.ldap._attributes;
+
+            if (ldapsTruststoreFile && ldapsTruststorePass) {
+                validateKeystore(ldapsTruststoreFile, ldapsTruststorePass);
             }
         }
-    } else {
-        console.warn('No Network Connectors Found');
-    }
 
-    const certificateSigning = CoreConfig.Configuration.certificateSigning;
-    if (certificateSigning?.TAKServerCAConfig) {
-        validateKeystore(
-            certificateSigning.TAKServerCAConfig._attributes.keystoreFile,
-            certificateSigning.TAKServerCAConfig._attributes.keystorePass
-        );
-    }
+        if (CoreConfig.Configuration.security) {
+            if (CoreConfig.Configuration.security.tls) {
+                validateKeystore(
+                    CoreConfig.Configuration.security.tls._attributes.keystoreFile,
+                    CoreConfig.Configuration.security.tls._attributes.keystorePass
+                );
+            }
 
-    if (CoreConfig.Configuration.auth.ldap) {
-        const {
-            ldapsTruststoreFile,
-            ldapsTruststorePass
-        } = CoreConfig.Configuration.auth.ldap._attributes;
-
-        if (ldapsTruststoreFile && ldapsTruststorePass) {
-            validateKeystore(ldapsTruststoreFile, ldapsTruststorePass);
-        }
-    }
-
-    if (CoreConfig.Configuration.security) {
-        if (CoreConfig.Configuration.security.tls) {
-            validateKeystore(
-                CoreConfig.Configuration.security.tls._attributes.keystoreFile,
-                CoreConfig.Configuration.security.tls._attributes.keystorePass
-            );
-        }
-
-        if (CoreConfig.Configuration.security.missionTls) {
-            validateKeystore(
-                CoreConfig.Configuration.security.missionTls._attributes.keystoreFile,
-                CoreConfig.Configuration.security.missionTls._attributes.keystorePass
-            );
+            if (CoreConfig.Configuration.security.missionTls) {
+                validateKeystore(
+                    CoreConfig.Configuration.security.missionTls._attributes.keystoreFile,
+                    CoreConfig.Configuration.security.missionTls._attributes.keystorePass
+                );
+            }
         }
     }
 

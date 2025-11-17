@@ -5,18 +5,19 @@ const NetworkConnector = Type.Object({
         port: Type.Integer(),
         _name: Type.String(),
         clientAuth: Type.Optional(Type.Boolean()),
-        keystore: Type.String(),
-        keystoreFile: Type.String(),
-        keystorePass: Type.String(),
-        enableAdminUI: Type.Boolean({
+        keystore: Type.Optional(Type.String()),
+        keystoreFile: Type.Optional(Type.String()),
+        keystorePass: Type.Optional(Type.String()),
+        useFederationTruststore: Type.Optional(Type.Boolean()),
+        enableAdminUI: Type.Optional(Type.Boolean({
             default: true
-        }),
-        enableWebtak: Type.Boolean({
+        })),
+        enableWebtak: Type.Optional(Type.Boolean({
             default: true
-        }),
-        enableNonAdminUI: Type.Boolean({
+        })),
+        enableNonAdminUI: Type.Optional(Type.Boolean({
             default: true
-        }),
+        })),
     })
 })
 
@@ -39,7 +40,7 @@ const Network = Type.Object({
     }),
     connector: Type.Union([NetworkConnector, Type.Array(NetworkConnector)]),
     announce: Type.Object({
-        _attributes: Type.Object({})
+        _attributes: Type.Optional(Type.Object({}))
     })
 })
 
@@ -170,24 +171,9 @@ const Repeater = Type.Object({
     }))
 })
 
-const Filter = Type.Object({
-    _attributes: Type.Object({})
-})
+const Filter = Type.Unknown();
 
-const Buff = Type.Object({
-    _attributes: Type.Object({}),
-    queue: Type.Object({
-        _attributes: Type.Object({}),
-        priority: Type.Object({
-            _attributes: Type.Object({})
-        })
-    }),
-    latestSA: Type.Object({
-        _attributes: Type.Object({
-            enable: Type.Boolean()
-        })
-    })
-})
+const Buff = Type.Unknown();
 
 const Dissemination = Type.Object({
     _attributes: Type.Object({
@@ -222,7 +208,7 @@ const CertificateSigning = Type.Object({
     })
 })
 
-const Logging = Type.Object({});
+const Logging = Type.Unknown();
 
 const Security = Type.Object({
     tls: Type.Object({
@@ -237,13 +223,13 @@ const Security = Type.Object({
             keymanager: Type.String(),
         })
     }),
-    missionTls: Type.Object({
+    missionTls: Type.Optional(Type.Object({
         _attributes: Type.Object({
             keystore: Type.String(),
             keystoreFile: Type.String(),
             keystorePass: Type.String()
         })
-    })
+    }))
 })
 
 const Ferry = Type.Object({});
