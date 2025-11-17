@@ -351,7 +351,8 @@ export async function build(
 
         if (diffs.length > 0) {
             console.log('ok - TAK Server - CoreConfig.xml change detected');
-            console.log(diffs.join('\n'));
+            const formattedDiffs = diffs.map((change) => JSON.stringify(change, null, 2));
+            console.log(formattedDiffs.join('\n'));
 
             await fsp.writeFile(`${opts.takdir}/CoreConfig.xml`, xmljs.js2xml(CoreConfig, {
                 compact: true
