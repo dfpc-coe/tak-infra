@@ -77,6 +77,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 export async function build(
     opts: BuildOptions
 ) {
+    if (opts.takdir.endsWith('/')) {
+        opts.takdir = opts.takdir.slice(0, -1);
+    }
+
     // Get AWS Root CA as the LDAP Stack is behind an NLB with an AWS Cert
     const Amazon_Root_Cert = await (await fetch('https://www.amazontrust.com/repository/AmazonRootCA1.pem')).text();
     await fsp.writeFile('/tmp/AmazonRootCA1.pem', Amazon_Root_Cert);
