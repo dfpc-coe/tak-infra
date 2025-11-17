@@ -53,6 +53,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
     await build({
         version: process.env.TAK_VERSION!,
+        tmpdir: '/tmp',
         takdir: '/opt/tak',
         domain: process.env.HostedDomain!,
         bucket: process.env.ConfigBucket!,
@@ -81,15 +82,24 @@ export async function build(
         opts.takdir = opts.takdir.slice(0, -1);
     }
 
+    if (opts.tmpdir.endsWith('/')) {
+        opts.tmpdir = opts.tmpdir.slice(0, -1);
+    }
+
     // Get AWS Root CA as the LDAP Stack is behind an NLB with an AWS Cert
     const Amazon_Root_Cert = await (await fetch('https://www.amazontrust.com/repository/AmazonRootCA1.pem')).text();
-    await fsp.writeFile('/tmp/AmazonRootCA1.pem', Amazon_Root_Cert);
+    await fsp.writeFile(`${opts.tmpdir}/AmazonRootCA1.pem`, Amazon_Root_Cert);
 
-    execSync('yes | keytool -import -file /tmp/AmazonRootCA1.pem -alias AWS -deststoretype JKS -deststorepass INTENTIONALLY_NOT_SENSITIVE -keystore /tmp/AmazonRootCA1.jks', {
+    execSync(`yes | keytool -import -file ${opts.tmpdir}/AmazonRootCA1.pem -alias AWS -deststoretype JKS -deststorepass INTENTIONALLY_NOT_SENSITIVE -keystore ${opts.tmpdir}/AmazonRootCA1.jks`, {
         stdio: 'inherit'
     });
 
-    await fsp.copyFile('/tmp/AmazonRootCA1.jks', `${opts.takdir}/certs/files/aws-acm-root.jks`);
+    // Ensure certs/files/<domain> exists
+    await fsp.mkdir(`${opts.takdir}/certs/files/${opts.domain}`, {
+        recursive: true
+    });
+
+    await fsp.copyFile(`${opts.tmpdir}/AmazonRootCA1.jks`, `${opts.takdir}/certs/files/aws-acm-root.jks`);
 
     let CoreConfig: Static<typeof CoreConfigType> | null = null;
 

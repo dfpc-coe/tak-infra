@@ -33,6 +33,7 @@ test('CoreConfig Build', async (t) => {
 
     await build({
         takdir,
+        tmpdir: takdir,
         version: REQUIRED_ENV.TAK_VERSION,
         domain: REQUIRED_ENV.HostedDomain,
         bucket: REQUIRED_ENV.ConfigBucket,
