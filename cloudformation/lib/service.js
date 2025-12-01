@@ -387,7 +387,8 @@ export default {
                                 's3:*',
                             ],
                             Resource: [
-                                cf.join(['arn:', cf.partition, ':s3:::tak-server-network-', cf.ref('Environment'), '-', cf.accountId, '-', cf.region])
+                                cf.join(['arn:', cf.partition, ':s3:::tak-server-network-', cf.ref('Environment'), '-', cf.accountId, '-', cf.region]),
+                                cf.join(['arn:', cf.partition, ':s3:::tak-server-network-', cf.ref('Environment'), '-', cf.accountId, '-', cf.region, '/*'])
                             ]
                         }]
                     }
