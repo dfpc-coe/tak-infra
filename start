@@ -80,9 +80,21 @@ if [[ -z ${ROOT_CA_PUBLIC} ]] && [[ -z ${ROOT_CA_PUBLIC_TRUSTED} ]] && [[ -z ${R
 fi
 
 # Check if TAK certs exist, otherwise generate them
-if [ ! -f "/opt/tak/certs/files/ca.pem" ]; then
+if [ ! -f "/opt/tak/certs/files/intermediate-ca-signing.jks" ]; then
+    echo "ok - TAK Server - Generating Intermediate CA Certificate"
+
     { yes || :; } | /opt/tak/certs/makeCert.sh ca intermediate-ca
+fi
+
+if [ ! -f "/opt/tak/certs/files/takserver.jks" ]; then
+    echo "ok - TAK Server - Generating Server Certificate"
+
     { yes || :; } | /opt/tak/certs/makeCert.sh server takserver
+fi
+
+if [ ! -f "/opt/tak/certs/files/admin.p12" ]; then
+    echo "ok - TAK Server - Generating Admin Client Certificate"
+
     { yes || :; } | /opt/tak/certs/makeCert.sh client admin
 
     aws secretsmanager put-secret-value \
