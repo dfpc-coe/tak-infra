@@ -28,29 +28,29 @@ cd /opt/tak/certs
 mkdir -p "/opt/tak/certs/files/${HostedDomain}/" || true
 
 echo "ok - Root CA - Checking for AWS Secrets Manager Secret"
-ROOT_CA_PUBLIC=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/root-ca/public 2> /dev/null) || $(echo "")
-ROOT_CA_PUBLIC_TRUSTED=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/root-ca/public-trusted 2> /dev/null) || $(echo "")
-ROOT_CA_PRIVATE=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/root-ca/private 2> /dev/null) || $(echo "")
-ROOT_CA_REVOKE=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/root-ca/revoke 2> /dev/null) || $(echo "")
+ROOT_CA_PUBLIC=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/root-ca/public --query SecretBinary --output text 2> /dev/null) || $(echo "")
+ROOT_CA_PUBLIC_TRUSTED=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/root-ca/public-trusted --query SecretBinary --output text 2> /dev/null) || $(echo "")
+ROOT_CA_PRIVATE=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/root-ca/private --query SecretBinary --output text 2> /dev/null) || $(echo "")
+ROOT_CA_REVOKE=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/root-ca/revoke --query SecretBinary --output text 2> /dev/null) || $(echo "")
 
 if [[ -n ${ROOT_CA_PUBLIC} ]]; then
     echo "ok - Root CA - Found in AWS Secrets Manager"
-    echo "${ROOT_CA_PUBLIC}" > "/opt/tak/certs/files/ca.pem"
+    echo "${ROOT_CA_PUBLIC}" | base64 --decode > "/opt/tak/certs/files/ca.pem"
 fi
 
 if [[ -n ${ROOT_CA_PUBLIC_TRUSTED} ]]; then
     echo "ok - Root CA Trusted - Found in AWS Secrets Manager"
-    echo "${ROOT_CA_PUBLIC_TRUSTED}" > "/opt/tak/certs/files/ca-trusted.pem"
+    echo "${ROOT_CA_PUBLIC_TRUSTED}" | base64 --decode > "/opt/tak/certs/files/ca-trusted.pem"
 fi
 
 if [[ -n ${ROOT_CA_PRIVATE} ]]; then
     echo "ok - Root CA Private - Found in AWS Secrets Manager"
-    echo "${ROOT_CA_PRIVATE}" > "/opt/tak/certs/files/ca-do-not-share.key"
+    echo "${ROOT_CA_PRIVATE}" | base64 --decode > "/opt/tak/certs/files/ca-do-not-share.key"
 fi
 
 if [[ -n ${ROOT_CA_REVOKE} ]]; then
     echo "ok - Root CA Revoke - Found in AWS Secrets Manager"
-    echo "${ROOT_CA_REVOKE}" > "/opt/tak/certs/files/ca.crl"
+    echo "${ROOT_CA_REVOKE}" | base64 --decode > "/opt/tak/certs/files/ca.crl"
 fi
 
 if [[ -z ${ROOT_CA_PUBLIC} ]] && [[ -z ${ROOT_CA_PUBLIC_TRUSTED} ]] && [[ -z ${ROOT_CA_PRIVATE} ]] && [[ -z ${ROOT_CA_REVOKE} ]]; then
@@ -64,7 +64,7 @@ if [[ -z ${ROOT_CA_PUBLIC} ]] && [[ -z ${ROOT_CA_PUBLIC_TRUSTED} ]] && [[ -z ${R
 
     aws secretsmanager put-secret-value \
         --secret-id "tak-server-network-${Environment}/root-ca/public" \
-        --secret-binary fileb://files/ca.pem|| true
+        --secret-binary fileb://files/ca.pem || true
 
     aws secretsmanager put-secret-value \
         --secret-id "tak-server-network-${Environment}/root-ca/public-trusted" \
