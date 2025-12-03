@@ -287,7 +287,7 @@ export default {
                         Value: cf.sub('{{resolve:secretsmanager:tak-server-network-${Environment}/rds/secret:SecretString:password:AWSCURRENT}}')
                     },{
                         Name: 'PostgresURL',
-                        Value: cf.join(['postgresql://', cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-db-endpoint'])), ':5432/tak_ps_etl'])
+                        Value: cf.join(['postgresql://', cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-db-endpoint'])), ':5432/takserver'])
                     },{
                         Name: 'COUNTRY',
                         Value: cf.ref('CertificateCountry')
