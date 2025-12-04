@@ -26,3 +26,6 @@ jobs:
 
       - name: TypeScript Check
         run: npm run check
+
+      - name: Test
+        run: npm test

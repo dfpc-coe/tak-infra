@@ -7,6 +7,8 @@ import * as childProcess from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import * as xmljs from 'xml-js';
+import assert from 'node:assert';
 
 const REQUIRED_ENV: Record<string, string> = {
     HostedDomain: 'test.local',
@@ -93,4 +95,19 @@ test('CoreConfig Build', async (t) => {
         },
         skipKeystoreValidation: true
     });
+
+    const coreConfigXml = await fsp.readFile(join(takdir, 'CoreConfig.xml'), 'utf-8');
+    const coreConfig = xmljs.xml2js(coreConfigXml, { compact: true }) as any;
+
+    assert.strictEqual(coreConfig.Configuration.network._attributes.version, REQUIRED_ENV.TAK_VERSION);
+    assert.strictEqual(coreConfig.Configuration.network._attributes.cloudwatchName, REQUIRED_ENV.StackName);
+    assert.strictEqual(coreConfig.Configuration.auth.ldap._attributes.url, REQUIRED_ENV.LDAP_SECURE_URL);
+    assert.strictEqual(coreConfig.Configuration.repository.connection._attributes.url, `jdbc:${REQUIRED_ENV.PostgresURL}`);
+
+    const nameEntries = coreConfig.Configuration.certificateSigning.certificateConfig.nameEntries.nameEntry;
+    const orgEntry = nameEntries.find((e: any) => e._attributes.name === 'O');
+    assert.strictEqual(orgEntry._attributes.value, REQUIRED_ENV.ORGANIZATION);
+
+    const ouEntry = nameEntries.find((e: any) => e._attributes.name === 'OU');
+    assert.strictEqual(ouEntry._attributes.value, REQUIRED_ENV.ORGANIZATIONAL_UNIT);
 });
