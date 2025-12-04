@@ -140,6 +140,35 @@ fi
 # Request LetsEncrypt certs in background
 /opt/tak/letsencrypt-request-cert.sh &
 
+if [[ -n "${LDAP_SECURE_URL:-}" ]] && [[ -n "${LDAP_SERVICE_USER:-}" ]] && [[ -n "${LDAP_SERVICE_USER_PASSWORD:-}" ]]; then
+    echo "ok - LDAP - Testing Connection"
+
+    # Extract host and port from URL (e.g. ldaps://ldap.example.com:636 -> ldap.example.com 636)
+    LDAP_HOST=$(echo $LDAP_SECURE_URL | sed -e 's|^[^/]*//||' -e 's|:.*$||')
+    LDAP_PORT=$(echo $LDAP_SECURE_URL | sed -e 's|^.*:||')
+
+    # Default to 636 for ldaps if no port specified
+    if [[ "$LDAP_PORT" == "$LDAP_HOST" ]]; then
+        LDAP_PORT=636
+    fi
+
+    if timeout 5 bash -c "</dev/tcp/${LDAP_HOST}/${LDAP_PORT}"; then
+        echo "ok - LDAP - TCP Connection Successful"
+
+        if command -v ldapsearch &> /dev/null; then
+            if ldapsearch -H "$LDAP_SECURE_URL" -x -D "$LDAP_SERVICE_USER" -w "$LDAP_SERVICE_USER_PASSWORD" -b "" -s base "objectclass=*" > /dev/null 2>&1; then
+                echo "ok - LDAP - Bind Successful"
+            else
+                echo "not ok - LDAP - Bind Failed"
+                exit 1
+            fi
+        fi
+    else
+        echo "not ok - LDAP - TCP Connection Failed to ${LDAP_HOST}:${LDAP_PORT}"
+        exit 1
+    fi
+fi
+
 echo "ok - TAK Server - Generating config file"
 cd /opt/tak
 npx tsx CoreConfig.ts
