@@ -240,7 +240,7 @@ export async function build(
     CoreConfig.Configuration.network.connector.push({
         _attributes: {
             port: 8446,
-            clientAuth: false,
+            clientAuth: "false",
             _name: 'cert_https',
             keystore: 'JKS',
             keystoreFile: `${opts.takdir}/certs/files/${opts.domain}/letsencrypt.jks`,
@@ -339,13 +339,13 @@ export async function build(
                 keymanager: 'SunX509'
             }
         },
-        missionTls: {
+        missionTls: [{
             _attributes: {
                 keystore: 'JKS',
                 keystoreFile: `${opts.takdir}/certs/files/truststore-root.jks`,
                 keystorePass: 'atakatak'
             }
-        }
+        }]
     }
 
     if (shouldValidateKeystores) {
@@ -391,10 +391,12 @@ export async function build(
             }
 
             if (CoreConfig.Configuration.security.missionTls) {
-                validateKeystore(
-                    CoreConfig.Configuration.security.missionTls._attributes.keystoreFile,
-                    CoreConfig.Configuration.security.missionTls._attributes.keystorePass
-                );
+                for (const missionTls of CoreConfig.Configuration.security.missionTls) {
+                    validateKeystore(
+                        missionTls._attributes.keystoreFile,
+                        missionTls._attributes.keystorePass
+                    );
+                }
             }
         }
     }
