@@ -409,51 +409,13 @@ export async function build(
         `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n${xml}`
     );
 
-    try {
-        console.log('ok - TAK Server - Checking for Diff in CoreConfig.xml');
+    console.log('ok - TAK Server - Uploading CoreConfig.xml to S3');
 
-        await fsp.stat(`${opts.takdir}/CoreConfig.xml`);
-
-        const LocalCoreConfig = xmljs.xml2js(fs.readFileSync('./CoreConfig.base.xml', 'utf-8'), {
-            compact: true
-        }) as Static<typeof CoreConfigType>;
-
-        const diffs = diff(CoreConfig, LocalCoreConfig);
-
-        if (diffs.length > 0) {
-            console.log('ok - TAK Server - CoreConfig.xml change detected');
-            const formattedDiffs = diffs.map((change) => JSON.stringify(change, null, 2));
-            console.log(formattedDiffs.join('\n'));
-
-            await fsp.writeFile(`${opts.takdir}/CoreConfig.xml`, xmljs.js2xml(CoreConfig, {
-                compact: true
-            }));
-
-            await s3.send(new PutObjectCommand({
-                Bucket: opts.bucket,
-                Key: 'CoreConfig.xml',
-                Body: fs.createReadStream(`${opts.takdir}/CoreConfig.xml`)
-            }));
-        } else {
-            console.log('ok - TAK Server - No CoreConfig.xml change detected');
-        }
-
-    } catch (err) {
-        if (isNodeError(err) && err.code === 'ENOENT') {
-            console.log('ok - TAK Server - No existing CoreConfig.xml, creating new one');
-            await fsp.writeFile(`${opts.takdir}/CoreConfig.xml`, xmljs.js2xml(CoreConfig, {
-                compact: true
-            }));
-
-            await s3.send(new PutObjectCommand({
-                Bucket: opts.bucket,
-                Key: 'CoreConfig.xml',
-                Body: fs.createReadStream(`${opts.takdir}/CoreConfig.xml`)
-            }));
-        } else {
-            throw err;
-        }
-    }
+    await s3.send(new PutObjectCommand({
+        Bucket: opts.bucket,
+        Key: 'CoreConfig.xml',
+        Body: fs.createReadStream(`${opts.takdir}/CoreConfig.xml`)
+    }));
 }
 
 function validateKeystore(file: string, pass: string) {

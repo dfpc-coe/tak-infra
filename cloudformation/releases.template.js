@@ -18,6 +18,9 @@ export default cf.merge({
             Type: 'AWS::S3::Bucket',
             Properties: {
                 BucketName: 'tak-server-releases',
+                VersioningConfiguration: {
+                    Status: 'Enabled'
+                },
                 OwnershipControls: {
                     Rules: [{
                         ObjectOwnership: 'BucketOwnerEnforced'

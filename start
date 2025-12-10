@@ -32,6 +32,10 @@ ROOT_CA_PUBLIC=$(aws secretsmanager get-secret-value --secret-id tak-server-netw
 ROOT_CA_PUBLIC_TRUSTED=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/root-ca/public-trusted --query SecretBinary --output text 2> /dev/null) || $(echo "")
 ROOT_CA_PRIVATE=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/root-ca/private --query SecretBinary --output text 2> /dev/null) || $(echo "")
 ROOT_CA_REVOKE=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/root-ca/revoke --query SecretBinary --output text 2> /dev/null) || $(echo "")
+TAK_INT_CA=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/tak-int-ca --query SecretBinary --output text 2> /dev/null) || $(echo "")
+TAK_SERVER_CERT=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/tak-server-cert --query SecretBinary --output text 2> /dev/null) || $(echo "")
+TAK_TRUSTSTORE_ROOT=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/truststore-root --query SecretBinary --output text 2> /dev/null) || $(echo "")
+TAK_TRUSTSTORE_INT=$(aws secretsmanager get-secret-value --secret-id tak-server-network-${Environment}/truststore-int-ca --query SecretBinary --output text 2> /dev/null) || $(echo "")
 
 if [[ -n ${ROOT_CA_PUBLIC} ]]; then
     echo "ok - Root CA - Found in AWS Secrets Manager"
@@ -51,6 +55,26 @@ fi
 if [[ -n ${ROOT_CA_REVOKE} ]]; then
     echo "ok - Root CA Revoke - Found in AWS Secrets Manager"
     echo "${ROOT_CA_REVOKE}" | base64 --decode > "/opt/tak/certs/files/ca.crl"
+fi
+
+if [[ -n ${TAK_INT_CA} ]]; then
+    echo "ok - Intermediate CA - Found in AWS Secrets Manager"
+    echo "${TAK_INT_CA}" | base64 --decode > "/opt/tak/certs/files/intermediate-ca-signing.jks"
+fi
+
+if [[ -n ${TAK_SERVER_CERT} ]]; then
+    echo "ok - Server Cert - Found in AWS Secrets Manager"
+    echo "${TAK_SERVER_CERT}" | base64 --decode > "/opt/tak/certs/files/takserver.jks"
+fi
+
+if [[ -n ${TAK_TRUSTSTORE_ROOT} ]]; then
+    echo "ok - Truststore Root - Found in AWS Secrets Manager"
+    echo "${TAK_TRUSTSTORE_ROOT}" | base64 --decode > "/opt/tak/certs/files/truststore-root.jks"
+fi
+
+if [[ -n ${TAK_TRUSTSTORE_INT} ]]; then
+    echo "ok - Truststore Intermediate - Found in AWS Secrets Manager"
+    echo "${TAK_TRUSTSTORE_INT}" | base64 --decode > "/opt/tak/certs/files/truststore-intermediate-ca.jks"
 fi
 
 if [[ -z ${ROOT_CA_PUBLIC} ]] && [[ -z ${ROOT_CA_PUBLIC_TRUSTED} ]] && [[ -z ${ROOT_CA_PRIVATE} ]] && [[ -z ${ROOT_CA_REVOKE} ]]; then
@@ -77,19 +101,52 @@ if [[ -z ${ROOT_CA_PUBLIC} ]] && [[ -z ${ROOT_CA_PUBLIC_TRUSTED} ]] && [[ -z ${R
     aws secretsmanager put-secret-value \
         --secret-id "tak-server-network-${Environment}/root-ca/revoke" \
         --secret-binary fileb://files/ca.crl || true
+
+    aws secretsmanager put-secret-value \
+        --secret-id "tak-server-network-${Environment}/truststore-root" \
+        --secret-binary fileb://files/truststore-root.jks || true
+fi
+
+if [[ -z ${TAK_TRUSTSTORE_ROOT} ]]; then
+    if [ ! -f "/opt/tak/certs/files/truststore-root.jks" ] && [ -f "/opt/tak/certs/files/ca.pem" ]; then
+        echo "ok - TAK Server - Generating Truststore Root from CA"
+        keytool -import -trustcacerts -file /opt/tak/certs/files/ca.pem -alias root -keystore /opt/tak/certs/files/truststore-root.jks -storepass atakatak -noprompt
+    fi
+
+    if [ -f "/opt/tak/certs/files/truststore-root.jks" ]; then
+        aws secretsmanager put-secret-value \
+            --secret-id "tak-server-network-${Environment}/truststore-root" \
+            --secret-binary fileb://files/truststore-root.jks || true
+    fi
 fi
 
 # Check if TAK certs exist, otherwise generate them
-if [ ! -f "/opt/tak/certs/files/intermediate-ca-signing.jks" ]; then
-    echo "ok - TAK Server - Generating Intermediate CA Certificate"
+if [[ -z ${TAK_INT_CA} ]]; then
+    if [ ! -f "/opt/tak/certs/files/intermediate-ca-signing.jks" ]; then
+        echo "ok - TAK Server - Generating Intermediate CA Certificate"
 
-    { yes || :; } | /opt/tak/certs/makeCert.sh ca intermediate-ca
+        { yes || :; } | /opt/tak/certs/makeCert.sh ca intermediate-ca
+    fi
+
+    aws secretsmanager put-secret-value \
+        --secret-id "tak-server-network-${Environment}/tak-int-ca" \
+        --secret-binary fileb://files/intermediate-ca-signing.jks || true
+
+    aws secretsmanager put-secret-value \
+        --secret-id "tak-server-network-${Environment}/truststore-int-ca" \
+        --secret-binary fileb://files/truststore-intermediate-ca.jks || true
 fi
 
-if [ ! -f "/opt/tak/certs/files/takserver.jks" ]; then
-    echo "ok - TAK Server - Generating Server Certificate"
+if [[ -z ${TAK_SERVER_CERT} ]]; then
+    if [ ! -f "/opt/tak/certs/files/takserver.jks" ]; then
+        echo "ok - TAK Server - Generating Server Certificate"
 
-    { yes || :; } | /opt/tak/certs/makeCert.sh server takserver
+        { yes || :; } | /opt/tak/certs/makeCert.sh server takserver
+    fi
+
+    aws secretsmanager put-secret-value \
+        --secret-id "tak-server-network-${Environment}/tak-server-cert" \
+        --secret-binary fileb://files/takserver.jks || true
 fi
 
 if [ ! -f "/opt/tak/certs/files/admin.p12" ]; then

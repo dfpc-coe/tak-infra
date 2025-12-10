@@ -60,6 +60,30 @@ export default {
                 KmsKeyId: cf.ref('KMS')
             }
         },
+        TAKServerCert: {
+            Type: 'AWS::SecretsManager::Secret',
+            Properties: {
+                Description: cf.join([cf.stackName, ' TAK Server Cert']),
+                Name: cf.join([cf.stackName, '/tak-server-cert']),
+                KmsKeyId: cf.ref('KMS')
+            }
+        },
+        TAKTruststoreRoot: {
+            Type: 'AWS::SecretsManager::Secret',
+            Properties: {
+                Description: cf.join([cf.stackName, ' TAK Truststore Root']),
+                Name: cf.join([cf.stackName, '/truststore-root']),
+                KmsKeyId: cf.ref('KMS')
+            }
+        },
+        TAKTruststoreIntermediate: {
+            Type: 'AWS::SecretsManager::Secret',
+            Properties: {
+                Description: cf.join([cf.stackName, ' TAK Truststore Intermediate']),
+                Name: cf.join([cf.stackName, '/truststore-int-ca']),
+                KmsKeyId: cf.ref('KMS')
+            }
+        },
         TAKAdminP12Secret: {
             Type: 'AWS::SecretsManager::Secret',
             Properties: {
