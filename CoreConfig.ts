@@ -196,6 +196,22 @@ export async function build(
         }
     });
 
+    CoreConfig.Configuration.buffer = {
+        queue: {
+            _attributes: {
+                enableStoreForwardChat: true
+            },
+            priority: {
+                _attributes: {}
+            }
+        },
+        latestSA: {
+            _attributes: {
+                enable: true
+            }
+        }
+    }
+
     CoreConfig.Configuration.auth.ldap = {
         _attributes: {
             url: opts.ldap.secureUrl,

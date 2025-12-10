@@ -14,7 +14,7 @@
     </auth>
     <submission ignoreStaleMessages="false" validateXml="false"/>
     <subscription reloadPersistent="false"/>
-    <repository enable="true" numDbConnections="16" primaryKeyBatchSize="500" insertionBatchSize="500">
+    <repository enable="true" numDbConnections="200" primaryKeyBatchSize="500" insertionBatchSize="500">
         <connection url="REPLACE_ME" username="REPLACE_ME" password="REPLACE_ME"/>
     </repository>
     <repeater enable="true" periodMillis="3000" staleDelayMillis="15000">
@@ -31,7 +31,7 @@
         <injectionfilter enable="true"></injectionfilter>
         <scrubber enable="false" action="overwrite"/>
         <qos>
-            <deliveryRateLimiter enabled="true">
+            <deliveryRateLimiter enabled="false">
                 <rateLimitRule clientThresholdCount="500" reportingRateLimitSeconds="200"/>
                 <rateLimitRule clientThresholdCount="1000" reportingRateLimitSeconds="300"/>
                 <rateLimitRule clientThresholdCount="2000" reportingRateLimitSeconds="400"/>
