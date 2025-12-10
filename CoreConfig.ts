@@ -106,8 +106,45 @@ export async function build(
     await fsp.copyFile(`${opts.tmpdir}/AmazonRootCA1.jks`, `${opts.takdir}/certs/files/aws-acm-root.jks`);
 
     let CoreConfig: Static<typeof CoreConfigType> | null = null;
+    let LocalCoreConfig: Static<typeof CoreConfigType> | null = null;
 
     const s3 = new S3Client({ region: opts.awsRegion || 'us-east-1' });
+
+    try {
+        fs.accessSync(`${opts.takdir}/CoreConfig.xml`);
+
+        LocalCoreConfig = xmljs.xml2js(fs.readFileSync(`${opts.takdir}/CoreConfig.xml`, 'utf-8'), {
+            compact: true
+        }) as Static<typeof CoreConfigType>;
+    } catch (err) {
+        if (isNodeError(err) && err.code === 'ENOENT') {
+            console.error('Local CoreConfig.xml not found - Generating from base');
+
+            fs.writeFileSync(
+                `${opts.takdir}/CoreConfig.xml`,
+                fs.readFileSync('./CoreConfig.base.xml', 'utf-8')
+            );
+        } else {
+            throw err;
+        }
+    }
+
+    try {
+        LocalCoreConfig = TypeValidator.type(
+            CoreConfigType,
+            LocalCoreConfig,
+            {
+                clean: false,
+                verbose: true,
+                convert: true,
+                default: true
+            }
+        );
+
+    } catch (err) {
+        console.error('Local: CoreConfig.xml is invalid, refusing to start');
+        throw err;
+    }
 
     try {
         const RemoteConfig = await s3.send(new GetObjectCommand({
