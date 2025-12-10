@@ -124,6 +124,10 @@ export async function build(
                 `${opts.takdir}/CoreConfig.xml`,
                 fs.readFileSync('./CoreConfig.base.xml', 'utf-8')
             );
+
+            LocalCoreConfig = xmljs.xml2js(fs.readFileSync(`${opts.takdir}/CoreConfig.xml`, 'utf-8'), {
+                compact: true
+            }) as Static<typeof CoreConfigType>;
         } else {
             throw err;
         }
@@ -191,6 +195,20 @@ export async function build(
     } catch (err) {
         console.error('CoreConfig.xml is invalid, refusing to start');
         throw err;
+    }
+
+    if (LocalCoreConfig && LocalCoreConfig.Configuration.filter?.injectionfilter?.uidInject) {
+        if (!CoreConfig.Configuration.filter) {
+            CoreConfig.Configuration.filter = {};
+        }
+        if (!CoreConfig.Configuration.filter.injectionfilter) {
+            CoreConfig.Configuration.filter.injectionfilter = {};
+        }
+        CoreConfig.Configuration.filter.injectionfilter.uidInject = LocalCoreConfig.Configuration.filter.injectionfilter.uidInject;
+    }
+
+    if (LocalCoreConfig && LocalCoreConfig.Configuration.federation) {
+        CoreConfig.Configuration.federation = LocalCoreConfig.Configuration.federation;
     }
 
     if (CoreConfig.Configuration.network._attributes.serverId === 'REPLACE_ME') {
