@@ -3,7 +3,7 @@ import cf from '@openaddresses/cloudfriend';
 const defaultTableMappings = JSON.stringify({
     rules: [{
         'rule-type': 'selection',
-        'rule-id': 'include-all',
+        'rule-id': '1',
         'rule-name': 'include-all',
         'object-locator': {
             'schema-name': '%',
