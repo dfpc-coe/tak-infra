@@ -65,6 +65,21 @@ export default {
         }
     },
     Resources: {
+        SourceDBParamGroup: {
+            Type: 'AWS::RDS::DBParameterGroup',
+            Properties: {
+                Description: 'Parameter group for source DB',
+                Family: 'postgres15',
+                Parameters: {
+                    shared_preload_libraries: 'pglogical,pg_stat_statements',
+                    'rds.logical_replication': '1'
+                },
+                Tags: [{
+                    Key: 'Name',
+                    Value: cf.join('-', [cf.stackName, 'source-param-group'])
+                }]
+            }
+        },
         DMSSecurityGroup: {
             Type: 'AWS::EC2::SecurityGroup',
             Properties: {
@@ -172,6 +187,10 @@ export default {
         }
     },
     Outputs: {
+        SourceDBParamGroup: {
+            Description: 'Name of the source DB parameter group',
+            Value: cf.ref('SourceDBParamGroup')
+        },
         ReplicationInstanceArn: {
             Description: 'ARN of the DMS replication instance',
             Value: cf.ref('DMSReplicationInstance')
