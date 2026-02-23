@@ -187,6 +187,7 @@ export default {
                 TableMappings: defaultTableMappings,
                 ReplicationTaskSettings: JSON.stringify({
                     TargetMetadata: {
+                        TargetTablePrepMode: 'TRUNCATE_BEFORE_LOAD',
                         FullLobMode: true,
                         LobChunkSize: 64,
                         SupportLobs: true,
