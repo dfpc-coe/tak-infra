@@ -8,6 +8,9 @@ import cf from '@openaddresses/cloudfriend';
 // Verify replication:
 //   SELECT name, setting FROM pg_settings WHERE name IN ('rds.logical_replication', 'wal_level', 'max_wal_senders', 'max_replication_slots');
 // Ensure logging role is present: Go to DMS Task => Monitoring => Ensure header isn't present prompting to create role
+//
+// Ensure the schema is pre-populated using the bastion box
+// pg_dump --schema-only --dbname="<POSTGRES_URL>" > schema_only_backup.sql
 
 const defaultTableMappings = JSON.stringify({
     rules: [{
