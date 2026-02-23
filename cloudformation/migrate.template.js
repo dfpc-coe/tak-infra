@@ -1,6 +1,5 @@
 import cf from '@openaddresses/cloudfriend';
 
-
 // Steps:
 // Migrate DB to VPCv2 using Console
 // Deploy this stack to create DMS resources
@@ -59,7 +58,7 @@ export default {
         ReplicationInstanceClass: {
             Description: 'DMS replication instance class',
             Type: 'String',
-            Default: 'dms.t3.medium'
+            Default: 'dms.r5.large'
         },
         ReplicationInstanceAllocatedStorage: {
             Description: 'Allocated storage (GB) for the DMS replication instance',
