@@ -7,6 +7,7 @@ import cf from '@openaddresses/cloudfriend';
 //   aws rds reboot-db-instance --db-instance-identifier cotak-takserver-staging-db
 // Verify replication:
 //   SELECT name, setting FROM pg_settings WHERE name IN ('rds.logical_replication', 'wal_level', 'max_wal_senders', 'max_replication_slots');
+// Ensure logging role is present: Go to DMS Task => Monitoring => Ensure header isn't present prompting to create role
 
 const defaultTableMappings = JSON.stringify({
     rules: [{
