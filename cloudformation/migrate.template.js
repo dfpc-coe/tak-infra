@@ -1,5 +1,14 @@
 import cf from '@openaddresses/cloudfriend';
 
+
+// Steps:
+// Migrate DB to VPCv2 using Console
+// Deploy this stack to create DMS resources
+// Associate the DB with the new parameter group and reboot to apply changes
+//   aws rds reboot-db-instance --db-instance-identifier cotak-takserver-staging-db
+// Verify replication:
+//   SELECT name, setting FROM pg_settings WHERE name IN ('rds.logical_replication', 'wal_level', 'max_wal_senders', 'max_replication_slots');
+
 const defaultTableMappings = JSON.stringify({
     rules: [{
         'rule-type': 'selection',
@@ -72,7 +81,8 @@ export default {
                 Family: 'postgres15',
                 Parameters: {
                     shared_preload_libraries: 'pglogical,pg_stat_statements',
-                    'rds.logical_replication': '1'
+                    'rds.logical_replication': '1',
+                    wal_sender_timeout: '0'
                 },
                 Tags: [{
                     Key: 'Name',
@@ -145,6 +155,7 @@ export default {
             Properties: {
                 EndpointType: 'source',
                 EngineName: 'postgres',
+                ExtraConnectionAttributes: 'PluginName=pglogical',
                 ServerName: cf.ref('SourceServerName'),
                 Port: cf.ref('SourcePort'),
                 DatabaseName: cf.ref('SourceDatabaseName'),
