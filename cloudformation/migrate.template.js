@@ -22,6 +22,22 @@ const defaultTableMappings = JSON.stringify({
             'table-name': '%'
         },
         'rule-action': 'include'
+    },{
+        'rule-type': 'transformation',
+        'rule-id': '2',
+        'rule-name': 'video_connections_v2',
+        'rule-target': 'column',
+        'rule-action': 'change-data-type',
+        'object-locator': {
+            'schema-name': 'public',
+            'table-name': 'video_connections_v2',
+            'column-name': 'groups'
+        },
+        "data-type": {
+            "type": "string",
+            "length": "65535",
+            "scale": ""
+        }
     }]
 });
 
@@ -144,6 +160,8 @@ export default {
                 AllocatedStorage: cf.ref('ReplicationInstanceAllocatedStorage'),
                 PubliclyAccessible: false,
                 MultiAZ: false,
+                EngineVersion: '3.6.1',
+                AllowMajorVersionUpgrade: true,
                 ReplicationInstanceClass: cf.ref('ReplicationInstanceClass'),
                 ReplicationSubnetGroupIdentifier: cf.ref('DMSSubnetGroup'),
                 VpcSecurityGroupIds: [cf.ref('DMSSecurityGroup')],
@@ -190,11 +208,18 @@ export default {
                 TableMappings: defaultTableMappings,
                 ReplicationTaskSettings: JSON.stringify({
                     TargetMetadata: {
-                        TargetTablePrepMode: 'TRUNCATE_BEFORE_LOAD',
+                        TargetTablePrepMode: "DO_NOTHING",
+                        SupportLobs: true,
                         FullLobMode: true,
                         LobChunkSize: 64,
-                        SupportLobs: true,
-                        ParallelLoadBufferSize: 0
+                        LimitedSizeLobMode: false,
+                        LobMaxSize: 0,
+                        CreatePkAfterFullLoad: false,
+                        StopTaskCachedChangesApplied: false,
+                        StopTaskCachedChangesNotApplied: false,
+                        MaxFullLoadSubTasks: 8,
+                        TransactionConsistencyTimeout: 600,
+                        CommitRate: 10000
                     },
                     Logging: { EnableLogging: true }
                 })
