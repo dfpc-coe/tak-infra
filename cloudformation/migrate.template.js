@@ -22,22 +22,6 @@ const defaultTableMappings = JSON.stringify({
             'table-name': '%'
         },
         'rule-action': 'include'
-    },{
-        'rule-type': 'transformation',
-        'rule-id': '2',
-        'rule-name': 'video_connections_v2',
-        'rule-target': 'column',
-        'rule-action': 'change-data-type',
-        'object-locator': {
-            'schema-name': 'public',
-            'table-name': 'video_connections_v2',
-            'column-name': 'groups'
-        },
-        "data-type": {
-            "type": "string",
-            "length": "65535",
-            "scale": ""
-        }
     }]
 });
 
