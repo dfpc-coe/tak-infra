@@ -66,7 +66,9 @@ export default {
                 Description: cf.join([cf.stackName, ' Aurora PostgreSQL Cluster Parameter Group']),
                 Family: 'aurora-postgresql17',
                 Parameters: {
-                    'rds.logical_replication': '1'
+                    'rds.logical_replication': '1',
+                    'log_connections': '1',
+                    'log_disconnections': '1'
                 }
             }
         },
