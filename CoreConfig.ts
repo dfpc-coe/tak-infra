@@ -105,8 +105,8 @@ export async function build(
 
     await fsp.copyFile(`${opts.tmpdir}/AmazonRootCA1.jks`, `${opts.takdir}/certs/files/aws-acm-root.jks`);
 
-    let CoreConfig: Static<typeof CoreConfigType> | null = null;
-    let LocalCoreConfig: Static<typeof CoreConfigType> | null = null;
+    let CoreConfig: Static<typeof CoreConfigType> | null;
+    let LocalCoreConfig: Static<typeof CoreConfigType> | null;
 
     const s3 = new S3Client({ region: opts.awsRegion || 'us-east-1' });
 
