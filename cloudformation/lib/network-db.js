@@ -59,6 +59,17 @@ export default {
                 Path: '/'
             }
         },
+        DBClusterParameterGroup: {
+            Type: 'AWS::RDS::DBClusterParameterGroup',
+            Properties: {
+                DBClusterParameterGroupName: cf.stackName,
+                Description: cf.join([cf.stackName, ' Aurora PostgreSQL Cluster Parameter Group']),
+                Family: 'aurora-postgresql17',
+                Parameters: {
+                    'rds.logical_replication': '1'
+                }
+            }
+        },
         DBCluster: {
             Type: 'AWS::RDS::DBCluster',
             DependsOn: ['DBMasterSecret'],
@@ -72,6 +83,7 @@ export default {
                 Port: 5432,
                 NetworkType: 'DUAL',
                 DBClusterIdentifier: cf.stackName,
+                DBClusterParameterGroupName: cf.ref('DBClusterParameterGroup'),
                 MasterUsername: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:username:AWSCURRENT}}'),
                 MasterUserPassword: cf.sub('{{resolve:secretsmanager:${AWS::StackName}/rds/secret:SecretString:password:AWSCURRENT}}'),
                 DBSubnetGroupName: cf.ref('DBSubnet'),
