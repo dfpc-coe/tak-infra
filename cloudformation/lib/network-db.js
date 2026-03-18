@@ -7,6 +7,7 @@ export default {
             Default: 'db.t4g.large',
             Description: 'Database size to create',
             AllowedValues: [
+                'db.t4g.medium',
                 'db.t4g.large'
             ]
         },
