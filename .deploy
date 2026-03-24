@@ -12,7 +12,7 @@
     ],
     "artifacts": {
         "docker": [
-            "coe-ecr-tak:{{gitsha}}"
+            "tak-vpc-{{stack}}-takserver:{{gitsha}}"
         ]
     }
 }

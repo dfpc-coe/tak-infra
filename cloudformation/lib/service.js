@@ -226,7 +226,7 @@ export default {
                 }],
                 ContainerDefinitions: [{
                     Name: 'api',
-                    Image: cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/coe-ecr-tak:', cf.ref('GitSha')]),
+                    Image: cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/tak-vpc-', cf.ref('Environment'), '-takserver:', cf.ref('GitSha')]),
                     MountPoints: [{
                         ContainerPath: '/opt/tak/certs/files',
                         SourceVolume: cf.join([cf.stackName, '-tak'])
