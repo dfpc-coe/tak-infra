@@ -48,7 +48,7 @@ function tak() {
         const $ = CP.exec(`
             docker build . -t takserver \
             && docker tag takserver:latest "$\{AWS_ACCOUNT_ID\}.dkr.ecr.$\{AWS_REGION\}.amazonaws.com/tak-vpc-$\{Environment\}-takserver:$\{GITSHA\}" \
-            && docker push "$\{AWS_ACCOUNT_ID\}.dkr.ecr.$\{AWS_REGION\}.amazonaws.com/tak-vpc-$\{Environment\}-tak:$\{GITSHA\}"
+            && docker push "$\{AWS_ACCOUNT_ID\}.dkr.ecr.$\{AWS_REGION\}.amazonaws.com/tak-vpc-$\{Environment\}-takserver:$\{GITSHA\}"
         `, (err) => {
             if (err) return reject(err);
             return resolve();
