@@ -10,6 +10,11 @@ set -euo pipefail
 echo "ok - TAK Server - New ECS Task starting..."
 echo "ok - NodeJS - Version: $(node --version)"
 
+if [ -d "/opt/tak-conf" ]; then
+    echo "ok - TAK Server - Applying conf overlay to /opt/tak"
+    cp -a /opt/tak-conf/. /opt/tak/
+fi
+
 # Ensure TAK certs Directory is present
 if [ -d "/opt/tak/certs/files/" ]; then
     mkdir -p "/opt/tak/certs/files/"

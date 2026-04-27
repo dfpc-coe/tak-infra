@@ -6,6 +6,7 @@ ENV HOME=/opt/tak
 WORKDIR $HOME
 
 COPY ./ $HOME/
+COPY ./conf/ /opt/tak-conf/
 
 EXPOSE 80
 EXPOSE 443

@@ -1,0 +1,11 @@
+---
+dataRetentionMap:
+  cot: 604800
+  files: 5184000
+  missionpackages: 5184000
+  geochat: 604800
+
+retentionSettings:
+  files:
+    exemptKeywords: ['permanent']
+
