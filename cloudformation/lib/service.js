@@ -223,16 +223,29 @@ export default {
                         },
                         RootDirectory: '/'
                     }
+                },{
+                    Name: cf.join([cf.stackName, '-coreconfig']),
+                    EFSVolumeConfiguration: {
+                        FilesystemId: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-efs'])),
+                        TransitEncryption: 'ENABLED',
+                        AuthorizationConfig: {
+                            AccessPointId: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-efs-ap-coreconfig']))
+                        },
+                        RootDirectory: '/'
+                    }
                 }],
                 ContainerDefinitions: [{
                     Name: 'api',
-                    Image: cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/coe-ecr-tak:', cf.ref('GitSha')]),
+                    Image: cf.join([cf.accountId, '.dkr.ecr.', cf.region, '.amazonaws.com/tak-vpc-', cf.ref('Environment'), '-takserver:', cf.ref('GitSha')]),
                     MountPoints: [{
                         ContainerPath: '/opt/tak/certs/files',
                         SourceVolume: cf.join([cf.stackName, '-tak'])
                     },{
                         ContainerPath: '/etc/letsencrypt',
                         SourceVolume: cf.join([cf.stackName, '-letsencrypt'])
+                    },{
+                        ContainerPath: '/opt/tak/config-persist',
+                        SourceVolume: cf.join([cf.stackName, '-coreconfig'])
                     }],
                     PortMappings: [{
                         ContainerPort: 8443
@@ -259,11 +272,11 @@ export default {
                         Name: 'StackName',
                         Value: cf.stackName
                     },{
-                        Name: 'ConfigBucket',
-                        Value: cf.join('-', ['tak-server-network', cf.ref('Environment'), cf.accountId, cf.region])
-                    },{
                         Name: 'Environment',
                         Value: cf.ref('Environment')
+                    },{
+                        Name: 'CoreConfigDirectory',
+                        Value: '/opt/tak/config-persist'
                     },{
                         Name: 'HostedEmail',
                         Value: cf.ref('HostedEmail')
@@ -380,15 +393,6 @@ export default {
                             ],
                             Resource: [
                                 cf.join(['arn:', cf.partition, ':ecs:', cf.region, ':', cf.accountId, ':service/tak-vpc-', cf.ref('Environment'), '/', cf.stackName])
-                            ]
-                        },{
-                            Effect: 'Allow',
-                            Action: [
-                                's3:*',
-                            ],
-                            Resource: [
-                                cf.join(['arn:', cf.partition, ':s3:::tak-server-network-', cf.ref('Environment'), '-', cf.accountId, '-', cf.region]),
-                                cf.join(['arn:', cf.partition, ':s3:::tak-server-network-', cf.ref('Environment'), '-', cf.accountId, '-', cf.region, '/*'])
                             ]
                         }]
                     }

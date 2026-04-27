@@ -3,6 +3,8 @@ import cf from '@openaddresses/cloudfriend';
 export default {
     Resources: {
         EFSFileSystem: {
+            DeletionPolicy: 'Retain',
+            UpdateReplacePolicy: 'Retain',
             Type: 'AWS::EFS::FileSystem',
             Properties: {
                 Encrypted: true,
@@ -15,6 +17,8 @@ export default {
             }
         },
         EFSAccessPointTAK: {
+            DeletionPolicy: 'Retain',
+            UpdateReplacePolicy: 'Retain',
             Type: 'AWS::EFS::AccessPoint',
             Properties: {
                 FileSystemId: cf.ref('EFSFileSystem'),
@@ -37,6 +41,8 @@ export default {
             }
         },
         EFSAccessPointLetsEncrypt: {
+            DeletionPolicy: 'Retain',
+            UpdateReplacePolicy: 'Retain',
             Type: 'AWS::EFS::AccessPoint',
             Properties: {
                 FileSystemId: cf.ref('EFSFileSystem'),
@@ -55,6 +61,30 @@ export default {
                         Permissions: '0777'
                     },
                     Path: '/etc/letsencrypt'
+                }
+            }
+        },
+        EFSAccessPointCoreConfig: {
+            DeletionPolicy: 'Retain',
+            UpdateReplacePolicy: 'Retain',
+            Type: 'AWS::EFS::AccessPoint',
+            Properties: {
+                FileSystemId: cf.ref('EFSFileSystem'),
+                PosixUser: {
+                    Uid: 0,
+                    Gid: 0
+                },
+                AccessPointTags: [{
+                    Key: 'Name',
+                    Value: cf.join('-', [cf.stackName, 'tak-coreconfig'])
+                }],
+                RootDirectory: {
+                    CreationInfo: {
+                        OwnerGid: 0,
+                        OwnerUid: 0,
+                        Permissions: '0777'
+                    },
+                    Path: '/opt/tak/config'
                 }
             }
         },
@@ -113,6 +143,13 @@ export default {
                 Name: cf.join([cf.stackName, '-efs-ap-certs'])
             },
             Value: cf.ref('EFSAccessPointTAK')
+        },
+        EFSCoreConfig: {
+            Description: 'EFS for TAK Server Config - CoreConfig AP',
+            Export: {
+                Name: cf.join([cf.stackName, '-efs-ap-coreconfig'])
+            },
+            Value: cf.ref('EFSAccessPointCoreConfig')
         }
     }
 };
