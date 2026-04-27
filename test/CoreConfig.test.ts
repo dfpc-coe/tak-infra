@@ -1,18 +1,13 @@
 import { build } from '../CoreConfig.js';
 import { test } from 'node:test';
-import sinon from 'sinon';
 import * as fsp from 'node:fs/promises';
-import * as fs from 'node:fs';
-import * as childProcess from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import * as xmljs from 'xml-js';
 import assert from 'node:assert';
 
 const REQUIRED_ENV: Record<string, string> = {
     HostedDomain: 'test.local',
-    ConfigBucket: 'test-bucket',
     PostgresUsername: 'postgres',
     PostgresPassword: 'postgres',
     PostgresURL: 'postgresql://example.com:5432/db',
@@ -28,35 +23,16 @@ const REQUIRED_ENV: Record<string, string> = {
 };
 
 test('CoreConfig Build', async (t) => {
-    const sandbox = sinon.createSandbox();
-
     const takdir = await fsp.mkdtemp(join(tmpdir(), 'tak-'));
     const tmpWorkingDir = await fsp.mkdtemp(join(tmpdir(), 'tmp-'));
+    const canonicalConfigDir = join(takdir, 'config-persist');
+    const canonicalConfigPath = join(canonicalConfigDir, 'CoreConfig.xml');
 
     t.after(async () => {
-        sandbox.restore();
         await Promise.all([
             fsp.rm(takdir, { recursive: true, force: true }),
             fsp.rm(tmpWorkingDir, { recursive: true, force: true })
         ]);
-    });
-
-    sandbox.stub(S3Client.prototype, 'send').callsFake(async (command: unknown) => {
-        if (command instanceof GetObjectCommand) {
-            const error = new Error('NoSuchKey');
-            (error as Error & { name: string }).name = 'NoSuchKey';
-            throw error;
-        }
-
-        if (command instanceof ListObjectsCommand || command instanceof ListObjectsV2Command) {
-            return { Contents: [] };
-        }
-
-        if (command instanceof PutObjectCommand) {
-            return {};
-        }
-
-        return {};
     });
 
     const keystoreFiles = [
@@ -72,12 +48,38 @@ test('CoreConfig Build', async (t) => {
         await fsp.writeFile(file, 'fake-keystore');
     }));
 
+    await fsp.mkdir(canonicalConfigDir, { recursive: true });
+    await fsp.writeFile(join(tmpWorkingDir, 'AmazonRootCA1.jks'), 'fake-jks');
+
+    const existingConfig = xmljs.xml2js(await fsp.readFile('./CoreConfig.base.xml', 'utf-8'), {
+        compact: true
+    }) as any;
+
+    existingConfig.Configuration.filter.injectionfilter.uidInject = [{
+        _attributes: {
+            uid: 'retain-me',
+            toInject: 'test-injection'
+        }
+    }];
+    existingConfig.Configuration.federation = {
+        _attributes: {
+            enableFederation: true
+        }
+    };
+    existingConfig.Configuration.auth.ldap._attributes.url = 'ldaps://old.example.org';
+    existingConfig.Configuration.repository.connection._attributes.url = 'jdbc:postgresql://old.example.org:5432/old';
+
+    await fsp.writeFile(canonicalConfigPath, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n${xmljs.js2xml(existingConfig, {
+        compact: true,
+        spaces: 4
+    })}`);
+
     await build({
         takdir,
         tmpdir: tmpWorkingDir,
         version: REQUIRED_ENV.TAK_VERSION,
         domain: REQUIRED_ENV.HostedDomain,
-        bucket: REQUIRED_ENV.ConfigBucket,
+        configDir: canonicalConfigDir,
         stackName: REQUIRED_ENV.StackName,
         awsRegion: REQUIRED_ENV.AWS_REGION,
         organization: REQUIRED_ENV.ORGANIZATION,
@@ -96,13 +98,26 @@ test('CoreConfig Build', async (t) => {
         skipKeystoreValidation: true
     });
 
-    const coreConfigXml = await fsp.readFile(join(takdir, 'CoreConfig.xml'), 'utf-8');
+    assert.strictEqual(await fsp.realpath(join(takdir, 'CoreConfig.xml')), canonicalConfigPath);
+
+    const coreConfigXml = await fsp.readFile(canonicalConfigPath, 'utf-8');
     const coreConfig = xmljs.xml2js(coreConfigXml, { compact: true }) as any;
 
     assert.strictEqual(coreConfig.Configuration.network._attributes.version, REQUIRED_ENV.TAK_VERSION);
     assert.strictEqual(coreConfig.Configuration.network._attributes.cloudwatchName, REQUIRED_ENV.StackName);
     assert.strictEqual(coreConfig.Configuration.auth.ldap._attributes.url, REQUIRED_ENV.LDAP_SECURE_URL);
     assert.strictEqual(coreConfig.Configuration.repository.connection._attributes.url, `jdbc:${REQUIRED_ENV.PostgresURL}`);
+    assert.strictEqual(coreConfig.Configuration.federation._attributes.enableFederation, 'true');
+    const uidInject = Array.isArray(coreConfig.Configuration.filter.injectionfilter.uidInject)
+        ? coreConfig.Configuration.filter.injectionfilter.uidInject
+        : [coreConfig.Configuration.filter.injectionfilter.uidInject];
+
+    assert.deepStrictEqual(uidInject, [{
+        _attributes: {
+            uid: 'retain-me',
+            toInject: 'test-injection'
+        }
+    }]);
 
     const nameEntries = coreConfig.Configuration.certificateSigning.certificateConfig.nameEntries.nameEntry;
     const orgEntry = nameEntries.find((e: any) => e._attributes.name === 'O');
@@ -110,4 +125,10 @@ test('CoreConfig Build', async (t) => {
 
     const ouEntry = nameEntries.find((e: any) => e._attributes.name === 'OU');
     assert.strictEqual(ouEntry._attributes.value, REQUIRED_ENV.ORGANIZATIONAL_UNIT);
+
+    const connectors = Array.isArray(coreConfig.Configuration.network.connector)
+        ? coreConfig.Configuration.network.connector
+        : [coreConfig.Configuration.network.connector];
+
+    assert.ok(connectors.some((connector: any) => connector._attributes._name === 'fed_https'));
 });

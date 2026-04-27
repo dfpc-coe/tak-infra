@@ -42,6 +42,12 @@ Deployment to AWS is handled via AWS Cloudformation. The templates can be found 
 directory. The deployment itself is performed by [Deploy](https://github.com/openaddresses/deploy) which
 was installed in the previous step.
 
+The deployed service stores its canonical `CoreConfig.xml` on the shared EFS filesystem. On task startup the
+config generator loads that canonical file, applies deploy-environment values such as LDAP and Postgres
+settings, and writes the result back to EFS so UI-driven TAK Server config changes persist across restarts.
+The legacy config S3 bucket is no longer used. Updating an existing network stack with this version stops
+CloudFormation from managing that bucket while retaining the physical bucket in AWS for safe cleanup later.
+
 > [!NOTE]
 > The deploy tool can be run via the following
 >
