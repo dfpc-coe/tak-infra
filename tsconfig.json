@@ -4,6 +4,9 @@
         "strictNullChecks": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
+        "types": [
+            "node"
+        ],
         "module": "nodenext",
         "target": "es2022",
         "moduleResolution": "nodenext",

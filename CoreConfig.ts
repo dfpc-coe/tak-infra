@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import TypeValidator from './src/type.js';
-import { Static } from '@sinclair/typebox';
+import type { Static } from '@sinclair/typebox';
 import CoreConfigType from './src/CoreConfigType.js';
 import { randomUUID } from 'node:crypto';
 import { toPem } from 'jks-js';
@@ -209,7 +209,7 @@ function applyDeployConfiguration(coreConfig: Static<typeof CoreConfigType>, opt
 
     const letsEncryptKeystore = `${opts.takdir}/certs/files/${opts.domain}/letsencrypt.jks`;
     const httpsConnector = upsertNamedConnector(configuration, 'https');
-    Object.assign(httpsConnector._attributes, {
+    Object.assign(ensureAttributes(httpsConnector), {
         port: 8443,
         _name: 'https',
         keystore: 'JKS',
@@ -221,7 +221,7 @@ function applyDeployConfiguration(coreConfig: Static<typeof CoreConfigType>, opt
     });
 
     const certHttpsConnector = upsertNamedConnector(configuration, 'cert_https');
-    Object.assign(certHttpsConnector._attributes, {
+    Object.assign(ensureAttributes(certHttpsConnector), {
         port: 8446,
         clientAuth: 'false',
         _name: 'cert_https',
@@ -236,7 +236,7 @@ function applyDeployConfiguration(coreConfig: Static<typeof CoreConfigType>, opt
     configuration.auth ??= {};
     const auth = configuration.auth as XmlObject;
     auth.ldap ??= { _attributes: {} };
-    Object.assign((auth.ldap as XmlObject)._attributes, {
+    Object.assign(ensureAttributes(auth.ldap as XmlObject), {
         url: opts.ldap.secureUrl,
         userstring: `uid={username},ou=People,${opts.ldap.dn}`,
         updateinterval: 60,
@@ -256,7 +256,7 @@ function applyDeployConfiguration(coreConfig: Static<typeof CoreConfigType>, opt
     configuration.repository ??= {};
     const repository = configuration.repository as XmlObject;
     repository.connection ??= { _attributes: {} };
-    Object.assign((repository.connection as XmlObject)._attributes, {
+    Object.assign(ensureAttributes(repository.connection as XmlObject), {
         url: `jdbc:${opts.postgres.url}`,
         username: opts.postgres.username,
         password: opts.postgres.password
@@ -277,7 +277,7 @@ function applyDeployConfiguration(coreConfig: Static<typeof CoreConfigType>, opt
     nameEntriesContainer.nameEntry = nameEntries;
 
     certificateSigning.TAKServerCAConfig ??= { _attributes: {} };
-    Object.assign((certificateSigning.TAKServerCAConfig as XmlObject)._attributes, {
+    Object.assign(ensureAttributes(certificateSigning.TAKServerCAConfig as XmlObject), {
         keystore: 'JKS',
         keystoreFile: `${opts.takdir}/certs/files/intermediate-ca-signing.jks`,
         keystorePass: 'atakatak',
@@ -290,7 +290,7 @@ function applyDeployConfiguration(coreConfig: Static<typeof CoreConfigType>, opt
     configuration.security ??= {};
     const security = configuration.security as XmlObject;
     security.tls ??= { _attributes: {} };
-    Object.assign((security.tls as XmlObject)._attributes, {
+    Object.assign(ensureAttributes(security.tls as XmlObject), {
         keystore: 'JKS',
         keystoreFile: `${opts.takdir}/certs/files/takserver.jks`,
         keystorePass: 'atakatak',
@@ -323,10 +323,12 @@ function validateConfiguredKeystores(coreConfig: Static<typeof CoreConfigType>) 
     }
 
     for (const connector of connectors) {
-        if (connector._attributes.keystoreFile && connector._attributes.keystorePass) {
+        const connectorAttributes = connector._attributes;
+
+        if (connectorAttributes?.keystoreFile && connectorAttributes.keystorePass) {
             validateKeystore(
-                connector._attributes.keystoreFile as string,
-                connector._attributes.keystorePass as string
+                connectorAttributes.keystoreFile as string,
+                connectorAttributes.keystorePass as string
             );
         }
     }
@@ -342,10 +344,11 @@ function validateConfiguredKeystores(coreConfig: Static<typeof CoreConfigType>) 
 
     const auth = configuration.auth as XmlObject | undefined;
     const ldap = auth?.ldap as XmlObject | undefined;
-    if (ldap?._attributes.ldapsTruststoreFile && ldap._attributes.ldapsTruststorePass) {
+    const ldapAttributes = ldap?._attributes;
+    if (ldapAttributes?.ldapsTruststoreFile && ldapAttributes.ldapsTruststorePass) {
         validateKeystore(
-            ldap._attributes.ldapsTruststoreFile as string,
-            ldap._attributes.ldapsTruststorePass as string
+            ldapAttributes.ldapsTruststoreFile as string,
+            ldapAttributes.ldapsTruststorePass as string
         );
     }
 
@@ -359,10 +362,12 @@ function validateConfiguredKeystores(coreConfig: Static<typeof CoreConfigType>) 
     }
 
     for (const missionTls of ensureArray(security?.missionTls as XmlObject | XmlObject[] | undefined)) {
-        if (missionTls._attributes.keystoreFile && missionTls._attributes.keystorePass) {
+        const missionTlsAttributes = missionTls._attributes;
+
+        if (missionTlsAttributes?.keystoreFile && missionTlsAttributes.keystorePass) {
             validateKeystore(
-                missionTls._attributes.keystoreFile as string,
-                missionTls._attributes.keystorePass as string
+                missionTlsAttributes.keystoreFile as string,
+                missionTlsAttributes.keystorePass as string
             );
         }
     }
@@ -392,7 +397,7 @@ function upsertCertificateNameEntry(nameEntries: XmlObject[], name: string, valu
         nameEntries.push(entry);
     }
 
-    entry._attributes.value = value;
+    ensureAttributes(entry).value = value;
 }
 
 function ensureAttributes(target: { _attributes?: Record<string, unknown> }) {
