@@ -264,7 +264,7 @@ export default {
                         Value: cf.ref('LDAPSecureUrl')
                     },{
                         Name: 'LDAP_SERVICE_USER',
-                        Value: cf.join(['uid=ldapsvcaccount,', cf.ref('LDAPDN')])
+                        Value: cf.ref('LDAPServiceUser')
                     },{
                         Name: 'LDAP_SERVICE_USER_PASSWORD',
                         Value: cf.sub('{{resolve:secretsmanager:tak-auth-${Environment}/svc:SecretString:password:AWSCURRENT}}')

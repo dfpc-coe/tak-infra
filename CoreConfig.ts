@@ -97,12 +97,15 @@ export async function build(
         fsp.mkdir(`${opts.takdir}/certs/files/${opts.domain}`, {
             recursive: true
         }),
+        fsp.mkdir(`${opts.takdir}/certs/amazon-certs`, {
+            recursive: true
+        }),
         fsp.mkdir(canonicalConfigDir, {
             recursive: true
         })
     ]);
 
-    await fsp.copyFile(`${opts.tmpdir}/AmazonRootCA1.jks`, `${opts.takdir}/certs/files/aws-acm-root.jks`);
+    await fsp.copyFile(`${opts.tmpdir}/AmazonRootCA1.jks`, `${opts.takdir}/certs/amazon-certs/aws-root-ca.jks`);
     await ensureCanonicalCoreConfig(runtimeCoreConfigPath, canonicalCoreConfigPath);
 
     console.log('ok - TAK Server - Loading canonical CoreConfig.xml from EFS');
@@ -238,19 +241,23 @@ function applyDeployConfiguration(coreConfig: Static<typeof CoreConfigType>, opt
     auth.ldap ??= { _attributes: {} };
     Object.assign(ensureAttributes(auth.ldap as XmlObject), {
         url: opts.ldap.secureUrl,
-        userstring: `uid={username},ou=People,${opts.ldap.dn}`,
+        userstring: `cn={username},ou=users,${opts.ldap.dn}`,
         updateinterval: 60,
-        groupprefix: '',
-        groupNameExtractorRegex: 'CN=(.*?)(?:,|$)',
+        groupprefix: 'cn=tak_',
+        groupNameExtractorRegex: 'cn=tak_(.*?)(?:,|$)',
         style: 'DS',
+        ldapSecurityType: 'simple',
         serviceAccountDN: opts.ldap.serviceUser,
         serviceAccountCredential: opts.ldap.serviceUserPassword,
-        groupObjectClass: 'groupOfNames',
-        groupBaseRDN: `ou=Group,${opts.ldap.dn}`,
+        groupObjectClass: 'group',
+        userObjectClass: 'user',
+        groupBaseRDN: `ou=groups,${opts.ldap.dn}`,
+        userBaseRDN: `ou=users,${opts.ldap.dn}`,
         ldapsTruststore: 'JKS',
-        ldapsTruststoreFile: `${opts.takdir}/certs/files/aws-acm-root.jks`,
+        ldapsTruststoreFile: `${opts.takdir}/certs/amazon-certs/aws-root-ca.jks`,
         ldapsTruststorePass: 'INTENTIONALLY_NOT_SENSITIVE',
-        enableConnectionPool: false
+        roleAttribute: 'memberOf',
+        enableConnectionPool: true
     });
 
     configuration.repository ??= {};
