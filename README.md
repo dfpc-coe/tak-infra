@@ -48,6 +48,21 @@ settings, and writes the result back to EFS so UI-driven TAK Server config chang
 The legacy config S3 bucket is no longer used. Updating an existing network stack with this version stops
 CloudFormation from managing that bucket while retaining the physical bucket in AWS for safe cleanup later.
 
+If operators cannot mount the EFS access point before first service startup, seed the network-stack secret
+`<network-stack>/coreconfig/initial` with the desired `CoreConfig.xml`. The ECS service injects that secret as
+`InitialCoreConfigXml`, and startup copies it into canonical EFS storage only when `CoreConfig.xml` is not
+already present. Existing EFS CoreConfig data always wins.
+
+To migrate certificate secrets and seed the initial CoreConfig directly from an existing TAK host, run:
+
+```sh
+./migrate.sh --network-stack tak-server-network-prod <ssh-name>
+```
+
+The migration script streams remote files over SSH directly into AWS Secrets Manager; it does not write a local
+archive or intermediate migration bundle. Use `--sudo` when the SSH user needs passwordless sudo to read the TAK
+files, and repeat `--ssh-option` for custom SSH options.
+
 > [!NOTE]
 > The deploy tool can be run via the following
 >

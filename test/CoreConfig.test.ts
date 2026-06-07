@@ -132,3 +132,62 @@ test('CoreConfig Build', async (t) => {
 
     assert.ok(connectors.some((connector: any) => connector._attributes._name === 'fed_https'));
 });
+
+test('CoreConfig Build seeds canonical config from initial secret', async (t) => {
+    const takdir = await fsp.mkdtemp(join(tmpdir(), 'tak-'));
+    const tmpWorkingDir = await fsp.mkdtemp(join(tmpdir(), 'tmp-'));
+    const canonicalConfigDir = join(takdir, 'config-persist');
+    const canonicalConfigPath = join(canonicalConfigDir, 'CoreConfig.xml');
+
+    t.after(async () => {
+        await Promise.all([
+            fsp.rm(takdir, { recursive: true, force: true }),
+            fsp.rm(tmpWorkingDir, { recursive: true, force: true })
+        ]);
+    });
+
+    await fsp.writeFile(join(tmpWorkingDir, 'AmazonRootCA1.jks'), 'fake-jks');
+
+    const initialConfig = xmljs.xml2js(await fsp.readFile('./CoreConfig.base.xml', 'utf-8'), {
+        compact: true
+    }) as any;
+    initialConfig.Configuration.network._attributes.serverId = 'seeded-server';
+
+    const initialCoreConfigXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n${xmljs.js2xml(initialConfig, {
+        compact: true,
+        spaces: 4
+    })}`;
+
+    await build({
+        takdir,
+        tmpdir: tmpWorkingDir,
+        version: REQUIRED_ENV.TAK_VERSION,
+        domain: REQUIRED_ENV.HostedDomain,
+        configDir: canonicalConfigDir,
+        initialCoreConfigXml,
+        stackName: REQUIRED_ENV.StackName,
+        awsRegion: REQUIRED_ENV.AWS_REGION,
+        organization: REQUIRED_ENV.ORGANIZATION,
+        organizationalUnit: REQUIRED_ENV.ORGANIZATIONAL_UNIT,
+        postgres: {
+            username: REQUIRED_ENV.PostgresUsername,
+            password: REQUIRED_ENV.PostgresPassword,
+            url: REQUIRED_ENV.PostgresURL
+        },
+        ldap: {
+            dn: REQUIRED_ENV.LDAP_DN,
+            secureUrl: REQUIRED_ENV.LDAP_SECURE_URL,
+            serviceUser: REQUIRED_ENV.LDAP_SERVICE_USER,
+            serviceUserPassword: REQUIRED_ENV.LDAP_SERVICE_USER_PASSWORD
+        },
+        skipKeystoreValidation: true
+    });
+
+    assert.strictEqual(await fsp.realpath(join(takdir, 'CoreConfig.xml')), canonicalConfigPath);
+
+    const coreConfigXml = await fsp.readFile(canonicalConfigPath, 'utf-8');
+    const coreConfig = xmljs.xml2js(coreConfigXml, { compact: true }) as any;
+
+    assert.strictEqual(coreConfig.Configuration.network._attributes.serverId, 'seeded-server');
+    assert.strictEqual(coreConfig.Configuration.network._attributes.version, REQUIRED_ENV.TAK_VERSION);
+});

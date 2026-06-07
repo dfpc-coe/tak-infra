@@ -17,6 +17,7 @@ type BuildOptions = {
     stackName?: string,
     awsRegion?: string,
     configDir?: string,
+    initialCoreConfigXml?: string,
     organization?: string,
     organizationalUnit?: string,
     skipKeystoreValidation?: boolean,
@@ -32,6 +33,8 @@ type BuildOptions = {
         serviceUserPassword: string
     }
 };
+
+const INITIAL_CORE_CONFIG_SENTINEL = '__TAK_INFRA_INITIAL_CORECONFIG_NOT_SET__';
 
 type XmlObject = {
     _attributes?: Record<string, unknown>,
@@ -64,6 +67,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         stackName: process.env.StackName,
         awsRegion: process.env.AWS_REGION,
         configDir: process.env.CoreConfigDirectory,
+        initialCoreConfigXml: process.env.InitialCoreConfigXml,
         organization: process.env.ORGANIZATION,
         organizationalUnit: process.env.ORGANIZATIONAL_UNIT,
         postgres: {
@@ -106,7 +110,7 @@ export async function build(
     ]);
 
     await fsp.copyFile(`${opts.tmpdir}/AmazonRootCA1.jks`, `${opts.takdir}/certs/amazon-certs/aws-root-ca.jks`);
-    await ensureCanonicalCoreConfig(runtimeCoreConfigPath, canonicalCoreConfigPath);
+    await ensureCanonicalCoreConfig(runtimeCoreConfigPath, canonicalCoreConfigPath, opts.initialCoreConfigXml);
 
     console.log('ok - TAK Server - Loading canonical CoreConfig.xml from EFS');
 
@@ -161,13 +165,20 @@ async function ensureAmazonRootStore(opts: BuildOptions, shouldValidateKeystores
     });
 }
 
-async function ensureCanonicalCoreConfig(runtimeCoreConfigPath: string, canonicalCoreConfigPath: string) {
+async function ensureCanonicalCoreConfig(
+    runtimeCoreConfigPath: string,
+    canonicalCoreConfigPath: string,
+    initialCoreConfigXml?: string
+) {
     const runtimeConfigEntry = await lstatIfExists(runtimeCoreConfigPath);
 
     if (!(await pathExists(canonicalCoreConfigPath))) {
         if (runtimeConfigEntry && runtimeConfigEntry.isFile()) {
             console.log('ok - TAK Server - Migrating existing local CoreConfig.xml to canonical EFS storage');
             await fsp.copyFile(runtimeCoreConfigPath, canonicalCoreConfigPath);
+        } else if (hasInitialCoreConfigSeed(initialCoreConfigXml)) {
+            console.log('ok - TAK Server - Seeding canonical CoreConfig.xml from initial CoreConfig secret');
+            await fsp.writeFile(canonicalCoreConfigPath, initialCoreConfigXml);
         } else {
             console.log('ok - TAK Server - Canonical CoreConfig.xml not found - Generating from base');
             await fsp.copyFile('./CoreConfig.base.xml', canonicalCoreConfigPath);
@@ -175,6 +186,10 @@ async function ensureCanonicalCoreConfig(runtimeCoreConfigPath: string, canonica
     }
 
     await ensureRuntimeCoreConfigLink(runtimeCoreConfigPath, canonicalCoreConfigPath);
+}
+
+function hasInitialCoreConfigSeed(value?: string): value is string {
+    return Boolean(value && value.trim() !== INITIAL_CORE_CONFIG_SENTINEL);
 }
 
 async function ensureRuntimeCoreConfigLink(runtimeCoreConfigPath: string, canonicalCoreConfigPath: string) {

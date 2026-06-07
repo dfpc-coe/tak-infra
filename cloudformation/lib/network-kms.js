@@ -36,6 +36,14 @@ export default {
                 KmsKeyId: cf.ref('KMS')
             }
         },
+        TAKRootCAPublicTrusted: {
+            Type: 'AWS::SecretsManager::Secret',
+            Properties: {
+                Description: cf.join([cf.stackName, ' TAK Root CA Trusted Public Cert']),
+                Name: cf.join([cf.stackName, '/root-ca/public-trusted']),
+                KmsKeyId: cf.ref('KMS')
+            }
+        },
         TAKRootCAPrviate: {
             Type: 'AWS::SecretsManager::Secret',
             Properties: {
@@ -91,6 +99,15 @@ export default {
                 Name: cf.join([cf.stackName, '/tak-admin-cert']),
                 KmsKeyId: cf.ref('KMS')
             }
+        },
+        TAKInitialCoreConfig: {
+            Type: 'AWS::SecretsManager::Secret',
+            Properties: {
+                Description: cf.join([cf.stackName, ' Initial CoreConfig.xml seed']),
+                Name: cf.join([cf.stackName, '/coreconfig/initial']),
+                SecretString: '__TAK_INFRA_INITIAL_CORECONFIG_NOT_SET__',
+                KmsKeyId: cf.ref('KMS')
+            }
         }
     },
     Outputs: {
@@ -100,6 +117,13 @@ export default {
                 Name: cf.join([cf.stackName, '-kms'])
             },
             Value: cf.getAtt('KMS', 'Arn')
+        },
+        InitialCoreConfigSecret: {
+            Description: 'Initial CoreConfig.xml Secrets Manager secret ARN',
+            Export: {
+                Name: cf.join([cf.stackName, '-coreconfig-initial-secret'])
+            },
+            Value: cf.getAtt('TAKInitialCoreConfig', 'Arn')
         }
     }
 };

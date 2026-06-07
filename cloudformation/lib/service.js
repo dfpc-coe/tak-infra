@@ -317,6 +317,10 @@ export default {
                         Name: 'ORGANIZATIONAL_UNIT',
                         Value: cf.ref('CertificateOrgUnit')
                     }],
+                    Secrets: [{
+                        Name: 'InitialCoreConfigXml',
+                        ValueFrom: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-coreconfig-initial-secret']))
+                    }],
                     LogConfiguration: {
                         LogDriver: 'awslogs',
                         Options: {
@@ -424,6 +428,22 @@ export default {
                                 'logs:DescribeLogStreams'
                             ],
                             Resource: [cf.join(['arn:', cf.partition, ':logs:*:*:*'])]
+                        },{
+                            Effect: 'Allow',
+                            Action: [
+                                'secretsmanager:GetSecretValue'
+                            ],
+                            Resource: [
+                                cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-coreconfig-initial-secret']))
+                            ]
+                        },{
+                            Effect: 'Allow',
+                            Action: [
+                                'kms:Decrypt'
+                            ],
+                            Resource: [
+                                cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-kms']))
+                            ]
                         }]
                     }
                 }],
