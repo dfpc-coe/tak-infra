@@ -42,16 +42,43 @@ Deployment to AWS is handled via AWS Cloudformation. The templates can be found 
 directory. The deployment itself is performed by [Deploy](https://github.com/openaddresses/deploy) which
 was installed in the previous step.
 
-The deployed service stores its canonical `CoreConfig.xml` on the shared EFS filesystem. On task startup the
-config generator loads that canonical file, applies deploy-environment values such as LDAP and Postgres
-settings, and writes the result back to EFS so UI-driven TAK Server config changes persist across restarts.
-The legacy config S3 bucket is no longer used. Updating an existing network stack with this version stops
-CloudFormation from managing that bucket while retaining the physical bucket in AWS for safe cleanup later.
+The deployed service stores its canonical `CoreConfig.xml` on the shared S3 Files file system. On task startup the
+config generator:
 
-If operators cannot mount the EFS access point before first service startup, seed the network-stack secret
+1. Creates `CoreConfig.xml` from `CoreConfig.base.xml` if no config exists yet (see the initial secret below).
+2. Loads the existing file and overwrites only the deploy-managed values: the `https`/`cert_https` connector
+   keystores, the LDAP connection, the Postgres connection, certificate signing paths, TLS keystores and the
+   CloudWatch/version attributes on `<network>`.
+3. Writes the result back to the file system and symlinks `/opt/tak/CoreConfig.xml` to it.
+
+Everything else in the file is left untouched, so changes made out of band - by the TAK Server admin UI
+(federation, inputs, data feeds, etc) or by editing `config/CoreConfig.xml` in the bucket - persist across restarts.
+Attributes that the deploy only sets on first creation (for example `validityDays` or `enableNonAdminUI`) can
+be tuned by operators without being reset. The startup script still validates the final file against the
+TAK Server XSD before launching.
+
+#### Persistent files: S3 Files
+
+Persistent TAK Server files (`/opt/tak/certs/files`, `/etc/letsencrypt` and the canonical `CoreConfig.xml`)
+live on an [Amazon S3 Files](https://aws.amazon.com/s3/features/files/) file system created by the network
+stack and backed by the `<network-stack>-files-<account>-<region>` bucket. The service mounts it through three
+access points, which map to the `certs/`, `letsencrypt/` and `config/` prefixes in that bucket.
+
+S3 Files keeps the bucket and the file system in sync in both directions, so operators can read or replace
+`config/CoreConfig.xml` directly in S3 without mounting anything. Writes from the running server are exported to
+S3 after 60 seconds of write inactivity; if the same object changes in S3 before that export lands, the S3 copy
+wins and the server's version is moved to the file system's lost+found directory. Stop the service (or accept
+that the S3 version wins) before editing `CoreConfig.xml` in the bucket.
+
+Existing deployments that still run on the previous EFS file system: copy `CoreConfig.xml` into the new
+bucket under `config/` before updating the service stack (certificates are restored from Secrets Manager on
+startup, and Let's Encrypt certificates are re-requested). Update the network stack first, then the service
+stack. The old EFS file system is retained in AWS for manual cleanup.
+
+If operators would rather not place `config/CoreConfig.xml` in the bucket before first service startup, seed the network-stack secret
 `<network-stack>/coreconfig/initial` with the desired `CoreConfig.xml`. The ECS service injects that secret as
-`InitialCoreConfigXml`, and startup copies it into canonical EFS storage only when `CoreConfig.xml` is not
-already present. Existing EFS CoreConfig data always wins.
+`InitialCoreConfigXml`, and startup copies it onto the file system only when `CoreConfig.xml` is not
+already present. An existing CoreConfig on the file system always wins.
 
 To migrate certificate secrets and seed the initial CoreConfig directly from an existing TAK host, run:
 

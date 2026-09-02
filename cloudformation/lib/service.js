@@ -205,33 +205,21 @@ export default {
                 TaskRoleArn: cf.getAtt('TaskRole', 'Arn'),
                 Volumes: [{
                     Name: cf.join([cf.stackName, '-tak']),
-                    EFSVolumeConfiguration: {
-                        FilesystemId: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-efs'])),
-                        TransitEncryption: 'ENABLED',
-                        AuthorizationConfig: {
-                            AccessPointId: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-efs-ap-certs']))
-                        },
-                        RootDirectory: '/'
+                    S3FilesVolumeConfiguration: {
+                        FileSystemArn: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-files'])),
+                        AccessPointArn: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-files-ap-certs']))
                     }
                 },{
                     Name: cf.join([cf.stackName, '-letsencrypt']),
-                    EFSVolumeConfiguration: {
-                        FilesystemId: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-efs'])),
-                        TransitEncryption: 'ENABLED',
-                        AuthorizationConfig: {
-                            AccessPointId: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-efs-ap-letsencrypt']))
-                        },
-                        RootDirectory: '/'
+                    S3FilesVolumeConfiguration: {
+                        FileSystemArn: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-files'])),
+                        AccessPointArn: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-files-ap-letsencrypt']))
                     }
                 },{
                     Name: cf.join([cf.stackName, '-coreconfig']),
-                    EFSVolumeConfiguration: {
-                        FilesystemId: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-efs'])),
-                        TransitEncryption: 'ENABLED',
-                        AuthorizationConfig: {
-                            AccessPointId: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-efs-ap-coreconfig']))
-                        },
-                        RootDirectory: '/'
+                    S3FilesVolumeConfiguration: {
+                        FileSystemArn: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-files'])),
+                        AccessPointArn: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-files-ap-coreconfig']))
                     }
                 }],
                 ContainerDefinitions: [{
@@ -389,6 +377,33 @@ export default {
                                 // This is a wildcard as the generated ARN is occasionally prefixed with a random hash
                                 // IE: tak-server-network-cotak-staging/root-ca/revoke-m43Ei7
                                 cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:tak-server-network-', cf.ref('Environment'), '/root-ca/*']),
+                            ]
+                        },{
+                            Effect: 'Allow',
+                            Action: [
+                                's3files:ClientMount',
+                                's3files:ClientWrite',
+                                's3files:ClientRootAccess'
+                            ],
+                            Resource: [
+                                cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-files']))
+                            ]
+                        },{
+                            Effect: 'Allow',
+                            Action: [
+                                's3:GetObject',
+                                's3:GetObjectVersion'
+                            ],
+                            Resource: [
+                                cf.join(['arn:', cf.partition, ':s3:::', cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-files-bucket'])), '/*'])
+                            ]
+                        },{
+                            Effect: 'Allow',
+                            Action: [
+                                's3:ListBucket'
+                            ],
+                            Resource: [
+                                cf.join(['arn:', cf.partition, ':s3:::', cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-files-bucket']))])
                             ]
                         },{
                             Effect: 'Allow',

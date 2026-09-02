@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
-import TypeValidator from './src/type.js';
+import { Value } from '@sinclair/typebox/value';
 import type { Static } from '@sinclair/typebox';
 import CoreConfigType from './src/CoreConfigType.js';
 import { randomUUID } from 'node:crypto';
@@ -114,24 +114,9 @@ export async function build(
 
     console.log('ok - TAK Server - Loading canonical CoreConfig.xml from EFS');
 
-    let coreConfig = readCoreConfig(canonicalCoreConfigPath);
+    const coreConfig = readCoreConfig(canonicalCoreConfigPath);
 
-    try {
-        coreConfig = TypeValidator.type(
-            CoreConfigType,
-            coreConfig,
-            {
-                clean: false,
-                verbose: true,
-                convert: true,
-                default: true
-            }
-        );
-    } catch (err) {
-        console.error('Canonical CoreConfig.xml is invalid, refusing to start');
-        throw err;
-    }
-
+    warnOnUnexpectedShape(coreConfig);
     applyDeployConfiguration(coreConfig, opts);
 
     if (shouldValidateKeystores) {
@@ -181,7 +166,7 @@ async function ensureCanonicalCoreConfig(
             await fsp.writeFile(canonicalCoreConfigPath, initialCoreConfigXml);
         } else {
             console.log('ok - TAK Server - Canonical CoreConfig.xml not found - Generating from base');
-            await fsp.copyFile('./CoreConfig.base.xml', canonicalCoreConfigPath);
+            await fsp.copyFile(new URL('./CoreConfig.base.xml', import.meta.url), canonicalCoreConfigPath);
         }
     }
 
@@ -212,52 +197,80 @@ async function ensureRuntimeCoreConfigLink(runtimeCoreConfigPath: string, canoni
     await fsp.symlink(canonicalCoreConfigPath, runtimeCoreConfigPath);
 }
 
+function warnOnUnexpectedShape(coreConfig: Static<typeof CoreConfigType>) {
+    const candidate = structuredClone(coreConfig);
+    Value.Convert(CoreConfigType, candidate);
+
+    const error = Value.Errors(CoreConfigType, candidate).First();
+
+    if (error) {
+        console.warn(`warn - TAK Server - CoreConfig.xml differs from the expected shape at ${error.path}: ${error.message}`);
+    }
+}
+
+// Managed attributes are always overwritten from the deploy environment.
+// Default attributes are only written when the operator has not set them.
+function setAttributes(
+    target: XmlObject,
+    managed: Record<string, unknown>,
+    defaults: Record<string, unknown> = {}
+) {
+    const attributes = ensureAttributes(target);
+
+    Object.assign(attributes, managed);
+
+    for (const [key, value] of Object.entries(defaults)) {
+        attributes[key] ??= value;
+    }
+
+    return attributes;
+}
+
 function applyDeployConfiguration(coreConfig: Static<typeof CoreConfigType>, opts: BuildOptions) {
     const configuration = (coreConfig as XmlObject).Configuration as XmlObject;
-    const network = configuration.network as XmlObject;
-    const networkAttributes = ensureAttributes(network);
 
-    if (networkAttributes.serverId === 'REPLACE_ME') {
+    configuration.network ??= {};
+    const network = configuration.network as XmlObject;
+    const networkAttributes = setAttributes(network, {
+        version: opts.version,
+        cloudwatchEnable: true,
+        cloudwatchName: opts.stackName
+    });
+
+    if (!networkAttributes.serverId || networkAttributes.serverId === 'REPLACE_ME') {
         networkAttributes.serverId = randomUUID();
     }
 
-    networkAttributes.version = opts.version;
-    networkAttributes.cloudwatchEnable = true;
-    networkAttributes.cloudwatchName = opts.stackName;
-
     const letsEncryptKeystore = `${opts.takdir}/certs/files/${opts.domain}/letsencrypt.jks`;
-    const httpsConnector = upsertNamedConnector(configuration, 'https');
-    Object.assign(ensureAttributes(httpsConnector), {
+    const connectorDefaults = {
+        enableNonAdminUI: false,
+        enableAdminUI: true,
+        enableWebtak: true
+    };
+
+    setAttributes(upsertNamedConnector(configuration, 'https'), {
         port: 8443,
         _name: 'https',
         keystore: 'JKS',
         keystoreFile: letsEncryptKeystore,
-        keystorePass: 'atakatak',
-        enableNonAdminUI: false,
-        enableAdminUI: true,
-        enableWebtak: true
-    });
+        keystorePass: 'atakatak'
+    }, connectorDefaults);
 
-    const certHttpsConnector = upsertNamedConnector(configuration, 'cert_https');
-    Object.assign(ensureAttributes(certHttpsConnector), {
+    setAttributes(upsertNamedConnector(configuration, 'cert_https'), {
         port: 8446,
         clientAuth: 'false',
         _name: 'cert_https',
         keystore: 'JKS',
         keystoreFile: letsEncryptKeystore,
-        keystorePass: 'atakatak',
-        enableNonAdminUI: false,
-        enableAdminUI: true,
-        enableWebtak: true
-    });
+        keystorePass: 'atakatak'
+    }, connectorDefaults);
 
     configuration.auth ??= {};
     const auth = configuration.auth as XmlObject;
-    auth.ldap ??= { _attributes: {} };
-    Object.assign(ensureAttributes(auth.ldap as XmlObject), {
+    auth.ldap ??= {};
+    setAttributes(auth.ldap as XmlObject, {
         url: opts.ldap.secureUrl,
         userstring: `cn={username},ou=users,${opts.ldap.dn}`,
-        updateinterval: 60,
         groupprefix: 'cn=tak_',
         groupNameExtractorRegex: 'cn=tak_(.*?)(?:,|$)',
         style: 'DS',
@@ -271,14 +284,16 @@ function applyDeployConfiguration(coreConfig: Static<typeof CoreConfigType>, opt
         ldapsTruststore: 'JKS',
         ldapsTruststoreFile: `${opts.takdir}/certs/amazon-certs/aws-root-ca.jks`,
         ldapsTruststorePass: 'INTENTIONALLY_NOT_SENSITIVE',
-        roleAttribute: 'memberOf',
+        roleAttribute: 'memberOf'
+    }, {
+        updateinterval: 60,
         enableConnectionPool: true
     });
 
     configuration.repository ??= {};
     const repository = configuration.repository as XmlObject;
-    repository.connection ??= { _attributes: {} };
-    Object.assign(ensureAttributes(repository.connection as XmlObject), {
+    repository.connection ??= {};
+    setAttributes(repository.connection as XmlObject, {
         url: `jdbc:${opts.postgres.url}`,
         username: opts.postgres.username,
         password: opts.postgres.password
@@ -286,8 +301,7 @@ function applyDeployConfiguration(coreConfig: Static<typeof CoreConfigType>, opt
 
     configuration.certificateSigning ??= {};
     const certificateSigning = configuration.certificateSigning as XmlObject;
-    certificateSigning._attributes ??= {};
-    certificateSigning._attributes.CA = 'TAKServer';
+    setAttributes(certificateSigning, { CA: 'TAKServer' });
     certificateSigning.certificateConfig ??= {};
     const certificateConfig = certificateSigning.certificateConfig as XmlObject;
     certificateConfig.nameEntries ??= {};
@@ -298,35 +312,36 @@ function applyDeployConfiguration(coreConfig: Static<typeof CoreConfigType>, opt
     upsertCertificateNameEntry(nameEntries, 'OU', opts.organizationalUnit ?? '');
     nameEntriesContainer.nameEntry = nameEntries;
 
-    certificateSigning.TAKServerCAConfig ??= { _attributes: {} };
-    Object.assign(ensureAttributes(certificateSigning.TAKServerCAConfig as XmlObject), {
+    certificateSigning.TAKServerCAConfig ??= {};
+    setAttributes(certificateSigning.TAKServerCAConfig as XmlObject, {
         keystore: 'JKS',
         keystoreFile: `${opts.takdir}/certs/files/intermediate-ca-signing.jks`,
         keystorePass: 'atakatak',
-        validityDays: '365',
-        signatureAlg: 'SHA256WithRSA',
         CAkey: `${opts.takdir}/certs/files/intermediate-ca-signing`,
         CAcertificate: `${opts.takdir}/certs/files/intermediate-ca-signing`
+    }, {
+        validityDays: '365',
+        signatureAlg: 'SHA256WithRSA'
     });
 
     configuration.security ??= {};
     const security = configuration.security as XmlObject;
-    security.tls ??= { _attributes: {} };
-    Object.assign(ensureAttributes(security.tls as XmlObject), {
+    security.tls ??= {};
+    setAttributes(security.tls as XmlObject, {
         keystore: 'JKS',
         keystoreFile: `${opts.takdir}/certs/files/takserver.jks`,
         keystorePass: 'atakatak',
         truststore: 'JKS',
         truststoreFile: `${opts.takdir}/certs/files/truststore-intermediate-ca.jks`,
-        truststorePass: 'atakatak',
+        truststorePass: 'atakatak'
+    }, {
         context: 'TLSv1.2',
         keymanager: 'SunX509'
     });
 
     const missionTls = ensureArray(security.missionTls as XmlObject | XmlObject[] | undefined);
-    const primaryMissionTls = missionTls[0] ?? { _attributes: {} };
-    primaryMissionTls._attributes ??= {};
-    Object.assign(primaryMissionTls._attributes, {
+    const primaryMissionTls = missionTls[0] ?? {};
+    setAttributes(primaryMissionTls, {
         keystore: 'JKS',
         keystoreFile: `${opts.takdir}/certs/files/truststore-root.jks`,
         keystorePass: 'atakatak'
@@ -436,9 +451,14 @@ function ensureArray<T>(value: T | T[] | undefined): T[] {
 }
 
 function readCoreConfig(filePath: string) {
-    return xmljs.xml2js(fs.readFileSync(filePath, 'utf-8'), {
+    const coreConfig = xmljs.xml2js(fs.readFileSync(filePath, 'utf-8'), {
         compact: true
-    }) as Static<typeof CoreConfigType>;
+    }) as XmlObject;
+
+    // The declaration is re-emitted by serializeCoreConfig
+    delete coreConfig._declaration;
+
+    return coreConfig as unknown as Static<typeof CoreConfigType>;
 }
 
 function serializeCoreConfig(coreConfig: Static<typeof CoreConfigType>) {

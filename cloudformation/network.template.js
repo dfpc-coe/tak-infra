@@ -3,14 +3,13 @@ import S3 from './lib/network-s3.js';
 import DB from './lib/network-db.js';
 import Alarms from './lib/network-alarms.js';
 import KMS from './lib/network-kms.js';
-import EFS from './lib/network-efs.js';
 import ELB from './lib/network-elb.js';
 import {
    RDS as RDSAlarms
 } from '@openaddresses/batch-alarms';
 
 export default cf.merge(
-    DB, KMS, Alarms, EFS, ELB, S3,
+    DB, KMS, Alarms, ELB, S3,
     {
         Description: 'Template for @tak-ps/tak-infra',
         Parameters: {

@@ -191,3 +191,137 @@ test('CoreConfig Build seeds canonical config from initial secret', async (t) =>
     assert.strictEqual(coreConfig.Configuration.network._attributes.serverId, 'seeded-server');
     assert.strictEqual(coreConfig.Configuration.network._attributes.version, REQUIRED_ENV.TAK_VERSION);
 });
+
+test('CoreConfig Build generates from base when no config is present', async (t) => {
+    const takdir = await fsp.mkdtemp(join(tmpdir(), 'tak-'));
+    const tmpWorkingDir = await fsp.mkdtemp(join(tmpdir(), 'tmp-'));
+    const canonicalConfigDir = join(takdir, 'config-persist');
+    const canonicalConfigPath = join(canonicalConfigDir, 'CoreConfig.xml');
+
+    t.after(async () => {
+        await Promise.all([
+            fsp.rm(takdir, { recursive: true, force: true }),
+            fsp.rm(tmpWorkingDir, { recursive: true, force: true })
+        ]);
+    });
+
+    await fsp.writeFile(join(tmpWorkingDir, 'AmazonRootCA1.jks'), 'fake-jks');
+
+    await build({
+        takdir,
+        tmpdir: tmpWorkingDir,
+        version: REQUIRED_ENV.TAK_VERSION,
+        domain: REQUIRED_ENV.HostedDomain,
+        configDir: canonicalConfigDir,
+        stackName: REQUIRED_ENV.StackName,
+        awsRegion: REQUIRED_ENV.AWS_REGION,
+        organization: REQUIRED_ENV.ORGANIZATION,
+        organizationalUnit: REQUIRED_ENV.ORGANIZATIONAL_UNIT,
+        postgres: {
+            username: REQUIRED_ENV.PostgresUsername,
+            password: REQUIRED_ENV.PostgresPassword,
+            url: REQUIRED_ENV.PostgresURL
+        },
+        ldap: {
+            dn: REQUIRED_ENV.LDAP_DN,
+            secureUrl: REQUIRED_ENV.LDAP_SECURE_URL,
+            serviceUser: REQUIRED_ENV.LDAP_SERVICE_USER,
+            serviceUserPassword: REQUIRED_ENV.LDAP_SERVICE_USER_PASSWORD
+        },
+        skipKeystoreValidation: true
+    });
+
+    const coreConfigXml = await fsp.readFile(canonicalConfigPath, 'utf-8');
+
+    assert.ok(coreConfigXml.startsWith('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Configuration'));
+    assert.strictEqual(coreConfigXml.match(/<\?xml/g)?.length, 1);
+    assert.ok(!coreConfigXml.includes('REPLACE_ME'));
+
+    const coreConfig = xmljs.xml2js(coreConfigXml, { compact: true }) as any;
+    assert.match(coreConfig.Configuration.network._attributes.serverId, /^[0-9a-f-]{36}$/);
+    assert.strictEqual(coreConfig.Configuration.certificateSigning._attributes.CA, 'TAKServer');
+    assert.strictEqual(coreConfig.Configuration.repository.connection._attributes.password, REQUIRED_ENV.PostgresPassword);
+    assert.strictEqual(coreConfig.Configuration.auth.ldap._attributes.serviceAccountDN, REQUIRED_ENV.LDAP_SERVICE_USER);
+});
+
+test('CoreConfig Build preserves operator and server edits outside managed attributes', async (t) => {
+    const takdir = await fsp.mkdtemp(join(tmpdir(), 'tak-'));
+    const tmpWorkingDir = await fsp.mkdtemp(join(tmpdir(), 'tmp-'));
+    const canonicalConfigDir = join(takdir, 'config-persist');
+    const canonicalConfigPath = join(canonicalConfigDir, 'CoreConfig.xml');
+
+    t.after(async () => {
+        await Promise.all([
+            fsp.rm(takdir, { recursive: true, force: true }),
+            fsp.rm(tmpWorkingDir, { recursive: true, force: true })
+        ]);
+    });
+
+    await fsp.mkdir(canonicalConfigDir, { recursive: true });
+    await fsp.writeFile(join(tmpWorkingDir, 'AmazonRootCA1.jks'), 'fake-jks');
+
+    const existingConfig = xmljs.xml2js(await fsp.readFile('./CoreConfig.base.xml', 'utf-8'), {
+        compact: true
+    }) as any;
+
+    // Operator tuned attributes that the deploy should not overwrite
+    existingConfig.Configuration.certificateSigning.TAKServerCAConfig._attributes.validityDays = '730';
+    existingConfig.Configuration.security.tls._attributes.context = 'TLSv1.3';
+    existingConfig.Configuration.auth.ldap._attributes.updateinterval = '15';
+    existingConfig.Configuration.network.connector.find((c: any) => c._attributes._name === 'https')._attributes.enableNonAdminUI = 'true';
+
+    // Server written sections in shapes that do not match the TypeBox schema
+    existingConfig.Configuration.auth.ldap.filtergroup = { _text: 'ops' };
+    existingConfig.Configuration.federation = {
+        _attributes: { enableFederation: 'true' },
+        'federation-outgoing': {
+            _attributes: { displayName: 'peer', address: 'peer.example.org', port: '9001' }
+        }
+    };
+
+    await fsp.writeFile(canonicalConfigPath, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n${xmljs.js2xml(existingConfig, {
+        compact: true,
+        spaces: 4
+    })}`);
+
+    await build({
+        takdir,
+        tmpdir: tmpWorkingDir,
+        version: REQUIRED_ENV.TAK_VERSION,
+        domain: REQUIRED_ENV.HostedDomain,
+        configDir: canonicalConfigDir,
+        stackName: REQUIRED_ENV.StackName,
+        awsRegion: REQUIRED_ENV.AWS_REGION,
+        organization: REQUIRED_ENV.ORGANIZATION,
+        organizationalUnit: REQUIRED_ENV.ORGANIZATIONAL_UNIT,
+        postgres: {
+            username: REQUIRED_ENV.PostgresUsername,
+            password: REQUIRED_ENV.PostgresPassword,
+            url: REQUIRED_ENV.PostgresURL
+        },
+        ldap: {
+            dn: REQUIRED_ENV.LDAP_DN,
+            secureUrl: REQUIRED_ENV.LDAP_SECURE_URL,
+            serviceUser: REQUIRED_ENV.LDAP_SERVICE_USER,
+            serviceUserPassword: REQUIRED_ENV.LDAP_SERVICE_USER_PASSWORD
+        },
+        skipKeystoreValidation: true
+    });
+
+    const coreConfigXml = await fsp.readFile(canonicalConfigPath, 'utf-8');
+    assert.strictEqual(coreConfigXml.match(/<\?xml/g)?.length, 1);
+
+    const coreConfig = xmljs.xml2js(coreConfigXml, { compact: true }) as any;
+
+    assert.strictEqual(coreConfig.Configuration.certificateSigning.TAKServerCAConfig._attributes.validityDays, '730');
+    assert.strictEqual(coreConfig.Configuration.certificateSigning.TAKServerCAConfig._attributes.keystoreFile, join(takdir, 'certs/files/intermediate-ca-signing.jks'));
+    assert.strictEqual(coreConfig.Configuration.security.tls._attributes.context, 'TLSv1.3');
+    assert.strictEqual(coreConfig.Configuration.auth.ldap._attributes.updateinterval, '15');
+    assert.strictEqual(coreConfig.Configuration.auth.ldap._attributes.url, REQUIRED_ENV.LDAP_SECURE_URL);
+    assert.strictEqual(coreConfig.Configuration.auth.ldap.filtergroup._text, 'ops');
+    assert.strictEqual(coreConfig.Configuration.federation['federation-outgoing']._attributes.address, 'peer.example.org');
+
+    const httpsConnector = coreConfig.Configuration.network.connector.find((c: any) => c._attributes._name === 'https');
+    assert.strictEqual(httpsConnector._attributes.enableNonAdminUI, 'true');
+    assert.strictEqual(httpsConnector._attributes.keystoreFile, join(takdir, 'certs/files', REQUIRED_ENV.HostedDomain, 'letsencrypt.jks'));
+});
