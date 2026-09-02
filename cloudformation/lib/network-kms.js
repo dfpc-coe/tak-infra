@@ -123,7 +123,7 @@ export default {
             Export: {
                 Name: cf.join([cf.stackName, '-coreconfig-initial-secret'])
             },
-            Value: cf.getAtt('TAKInitialCoreConfig', 'Arn')
+            Value: cf.ref('TAKInitialCoreConfig')
         }
     }
 };
