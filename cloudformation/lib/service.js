@@ -254,9 +254,6 @@ export default {
                         Name: 'LDAP_SERVICE_USER',
                         Value: cf.ref('LDAPServiceUser')
                     },{
-                        Name: 'LDAP_SERVICE_USER_PASSWORD',
-                        Value: cf.sub('{{resolve:secretsmanager:tak-auth-${Environment}/svc:SecretString:password:AWSCURRENT}}')
-                    },{
                         Name: 'StackName',
                         Value: cf.stackName
                     },{
@@ -281,12 +278,6 @@ export default {
                         Name: 'ECS_Service_Name',
                         Value: cf.stackName
                     },{
-                        Name: 'PostgresUsername',
-                        Value: cf.sub('{{resolve:secretsmanager:tak-server-network-${Environment}/rds/secret:SecretString:username:AWSCURRENT}}')
-                    },{
-                        Name: 'PostgresPassword',
-                        Value: cf.sub('{{resolve:secretsmanager:tak-server-network-${Environment}/rds/secret:SecretString:password:AWSCURRENT}}')
-                    },{
                         Name: 'PostgresURL',
                         Value: cf.join(['postgresql://', cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-db-endpoint'])), ':5432/takserver'])
                     },{
@@ -308,6 +299,15 @@ export default {
                     Secrets: [{
                         Name: 'InitialCoreConfigXml',
                         ValueFrom: cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-coreconfig-initial-secret']))
+                    },{
+                        Name: 'LDAP_SERVICE_USER_PASSWORD',
+                        ValueFrom: cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:tak-auth-', cf.ref('Environment'), '/svc:password::'])
+                    },{
+                        Name: 'PostgresUsername',
+                        ValueFrom: cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:tak-server-network-', cf.ref('Environment'), '/rds/secret:username::'])
+                    },{
+                        Name: 'PostgresPassword',
+                        ValueFrom: cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:tak-server-network-', cf.ref('Environment'), '/rds/secret:password::'])
                     }],
                     LogConfiguration: {
                         LogDriver: 'awslogs',
@@ -449,7 +449,9 @@ export default {
                                 'secretsmanager:GetSecretValue'
                             ],
                             Resource: [
-                                cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-coreconfig-initial-secret']))
+                                cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-coreconfig-initial-secret'])),
+                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:tak-auth-', cf.ref('Environment'), '/svc-*']),
+                                cf.join(['arn:', cf.partition, ':secretsmanager:', cf.region, ':', cf.accountId, ':secret:tak-server-network-', cf.ref('Environment'), '/rds/secret-*'])
                             ]
                         },{
                             Effect: 'Allow',
@@ -457,7 +459,8 @@ export default {
                                 'kms:Decrypt'
                             ],
                             Resource: [
-                                cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-kms']))
+                                cf.importValue(cf.join(['tak-server-network-', cf.ref('Environment'), '-kms'])),
+                                cf.importValue(cf.join(['tak-auth-', cf.ref('Environment'), '-kms']))
                             ]
                         }]
                     }
