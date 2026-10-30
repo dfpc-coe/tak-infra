@@ -8,6 +8,9 @@ WORKDIR $HOME
 COPY ./ $HOME/
 COPY ./conf/ /opt/tak-conf/
 
+RUN curl -fsSL https://gist.githubusercontent.com/ingalls/cd7b10d1de0d24fba1a32262869c492c/raw/watchdog.sh -o /opt/tak/watchdog.sh \
+    && chmod +x /opt/tak/watchdog.sh
+
 EXPOSE 80
 EXPOSE 443
 EXPOSE 8443

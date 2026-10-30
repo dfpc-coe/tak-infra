@@ -59,7 +59,16 @@ TAK Server XSD before launching.
 
 #### Watchdog
 
-`start` launches `watchdog.sh` next to TAK Server. It runs for the life of the task and checks:
+`start` launches `watchdog.sh` next to TAK Server. The script is maintained in the
+[tak-infra-watchdog gist](https://gist.github.com/ingalls/cd7b10d1de0d24fba1a32262869c492c) and copied into the image at build time, so it can also be installed as a
+systemd service on a standalone Ubuntu or Rocky TAK Server:
+
+```sh
+curl -fsSL https://gist.githubusercontent.com/ingalls/cd7b10d1de0d24fba1a32262869c492c/raw/watchdog.sh \
+    | sudo bash -s -- install --sns-topic-arn <arn>
+```
+
+It runs for the life of the task and checks:
 
 | Check          | Interval  | Failure |
 | -------------- | --------- | ------- |

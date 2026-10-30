@@ -12,7 +12,10 @@
 
 ### Pending Release
 
+### v2.3.0
+
 - :tada: Add `watchdog.sh`, started alongside TAK Server, which monitors the TAK Server JVMs, the `takserver-api` endpoint and the expiry of the CoreConfig connector certificates and publishes failures to the SNS topic given by the new `WatchdogTopicArn` parameter
+- :rocket: Move `watchdog.sh` to the [tak-infra-watchdog gist](https://gist.github.com/ingalls/cd7b10d1de0d24fba1a32262869c492c), fetched at image build; it now doubles as a `curl | bash` systemd installer for standalone Ubuntu/Rocky TAK Servers
 - :bug: Fix `CoreConfig.xml` being written with two XML declarations, which failed `validateConfig.sh` on startup
 - :rocket: Only overwrite deploy-managed `CoreConfig.xml` attributes; operator and TAK Server UI edits are preserved
 - :rocket: Schema mismatches in an existing `CoreConfig.xml` now log a warning instead of refusing to start
@@ -23,7 +26,6 @@
 ### v2.2.0
 
 - :rocket: Move ECS service from public to private subnet. As a result disable assignment of public IP for the task itself. External connectivity will be solely via the NLB - which is in the public subnet.
-
 
 ### v2.1.0
 
