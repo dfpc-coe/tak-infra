@@ -12,6 +12,7 @@
 
 ### Pending Release
 
+- :tada: Add `watchdog.sh`, started alongside TAK Server, which monitors the TAK Server JVMs, the `takserver-api` endpoint and the expiry of the CoreConfig connector certificates and publishes failures to the SNS topic given by the new `WatchdogTopicArn` parameter
 - :bug: Fix `CoreConfig.xml` being written with two XML declarations, which failed `validateConfig.sh` on startup
 - :rocket: Only overwrite deploy-managed `CoreConfig.xml` attributes; operator and TAK Server UI edits are preserved
 - :rocket: Schema mismatches in an existing `CoreConfig.xml` now log a warning instead of refusing to start

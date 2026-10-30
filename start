@@ -254,6 +254,9 @@ echo "ok - TAK Server - Elevating admin user privileges succeeded"
 
 echo "ok - TAK Server - New ECS Task successfully started"
 
+echo "ok - Watchdog - Starting TAK Server watchdog"
+/opt/tak/watchdog.sh &
+
 # Run cron in foreground
 echo "ok - Certbot - Starting cron for certbot renewals"
 /usr/sbin/cron -f

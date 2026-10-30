@@ -62,7 +62,15 @@ export default {
             Description: 'LDAP Bind User Password',
             Type: 'String',
             Default: 'password'
+        },
+        WatchdogTopicArn: {
+            Description: 'SNS Topic ARN (ie: a Rootly connected topic) that the TAK Server watchdog publishes failures to - blank disables notifications',
+            Type: 'String',
+            Default: ''
         }
+    },
+    Conditions: {
+        HasWatchdogTopic: cf.not(cf.equals(cf.ref('WatchdogTopicArn'), ''))
     },
     Resources: {
         Listener443: {
@@ -295,6 +303,9 @@ export default {
                     },{
                         Name: 'ORGANIZATIONAL_UNIT',
                         Value: cf.ref('CertificateOrgUnit')
+                    },{
+                        Name: 'WATCHDOG_SNS_TOPIC_ARN',
+                        Value: cf.ref('WatchdogTopicArn')
                     }],
                     Secrets: [{
                         Name: 'InitialCoreConfigXml',
@@ -416,6 +427,21 @@ export default {
                         }]
                     }
                 }]
+            }
+        },
+        WatchdogPublishPolicy: {
+            Type: 'AWS::IAM::Policy',
+            Condition: 'HasWatchdogTopic',
+            Properties: {
+                PolicyName: cf.join('-', [cf.stackName, 'watchdog-policy']),
+                Roles: [cf.ref('TaskRole')],
+                PolicyDocument: {
+                    Statement: [{
+                        Effect: 'Allow',
+                        Action: ['sns:Publish'],
+                        Resource: [cf.ref('WatchdogTopicArn')]
+                    }]
+                }
             }
         },
         ExecRole: {

@@ -57,6 +57,31 @@ Attributes that the deploy only sets on first creation (for example `validityDay
 be tuned by operators without being reset. The startup script still validates the final file against the
 TAK Server XSD before launching.
 
+#### Watchdog
+
+`start` launches `watchdog.sh` next to TAK Server. It runs for the life of the task and checks:
+
+| Check          | Interval  | Failure |
+| -------------- | --------- | ------- |
+| `takserver-*`  | 5 seconds | One of the TAK Server JVMs (config, messaging, api, retention, plugins) is no longer running |
+| `api`          | 5 seconds | `GET https://localhost:8446/Marti/api/version` does not answer `200` within 5 seconds, three times in a row |
+| `cert`         | 1 hour    | A certificate in a keystore referenced by a `CoreConfig.xml` `<connector keystoreFile=...>` (the Let's Encrypt keystore) expires in under 7 days, or the keystore cannot be read |
+
+When a check starts failing a `firing` notification is published to the SNS topic given by the `WatchdogTopicArn`
+service-stack parameter (for example the topic of an SNS stack subscribed by Rootly). The notification repeats
+hourly while the check keeps failing and a `resolved` notification is published when it recovers. Process and API
+failures are not published during the first 5 minutes after the task starts. If the parameter is blank, failures
+are only written to the task log.
+
+Each notification has a short subject (`[<stack>] FIRING: takserver-api is not responding`) and a JSON message
+with `check`, `status` (`firing`/`resolved`), `severity` (`critical`/`warning`), `summary`, `description`, the
+stack, environment, hosted domain and ECS task ARN. `check`, `status` and `severity` are also set as SNS message
+attributes so subscriptions can filter on them.
+
+Intervals, thresholds and the API URL can be tuned through `WATCHDOG_*` environment variables documented in
+`./watchdog.sh --help`. Run `./watchdog.sh --once` inside the task (ECS Exec) to evaluate every check once and
+exit non-zero if any fails; add `--notify` to also publish the failures.
+
 #### Persistent files: S3 Files
 
 Persistent TAK Server files (`/opt/tak/certs/files`, `/etc/letsencrypt` and the canonical `CoreConfig.xml`)
