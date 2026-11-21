@@ -12,6 +12,12 @@
 
 ### Pending Release
 
+- :bug: Remove a hardcoded `cotak-staging` secret lookup in `start` which stopped tasks in every other environment
+- :bug: Rebuild the TAK keystore from the renewed Let's Encrypt cert in the deploy hook and on every task start, and give the cron-run hook the container environment, so renewals reach TAK Server
+- :tada: Add `CreateDNSRecord` network-stack parameter to stage a stack ahead of a DNS cutover
+- :rocket: CI now builds through `npm run build` and pushes to the `tak-vpc-<env>-takserver` repositories the service pulls from; `Environment` accepts a comma separated list
+- :bug: Exclude `tak-data/` and other local files from the Docker build context
+
 ### v2.3.0
 
 - :tada: Add `watchdog.sh`, started alongside TAK Server, which monitors the TAK Server JVMs, the `takserver-api` endpoint and the expiry of the CoreConfig connector certificates and publishes failures to the SNS topic given by the new `WatchdogTopicArn` parameter

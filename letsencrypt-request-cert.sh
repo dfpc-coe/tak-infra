@@ -48,11 +48,5 @@ if [ ! -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
     # Save Certbot Cronjob
     cp /etc/cron.d/certbot /etc/letsencrypt/certbot.cron
 
-    # Force generation of new TAK certs from LetsEncrypt certs on new task deployment
-
-    rm -rf "/opt/tak/certs/files/${HostedDomain}"
-
-    echo "ok - Certbot - New LetsEncrypt certs issued - Deploying new ECS task..."
-
-    aws ecs update-service --cluster $ECS_Cluster_Name --service $ECS_Service_Name --force-new-deployment
+    echo "ok - Certbot - New LetsEncrypt certs issued - Deploy hook is rolling out a new ECS task"
 fi

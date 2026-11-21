@@ -7,10 +7,20 @@ export default {
             Type: 'String',
             Default: 'ops'
         },
+        CreateDNSRecord: {
+            Description: 'Point the hosted domain at the ELB - set to false to stage the stack ahead of a DNS cutover',
+            Type: 'String',
+            AllowedValues: ['true', 'false'],
+            Default: 'true'
+        }
+    },
+    Conditions: {
+        HasDNSRecord: cf.equals(cf.ref('CreateDNSRecord'), 'true')
     },
     Resources: {
         ELBDNS: {
             Type: 'AWS::Route53::RecordSet',
+            Condition: 'HasDNSRecord',
             Properties: {
                 HostedZoneId: cf.importValue(cf.join(['tak-vpc-', cf.ref('Environment'), '-hosted-zone-id'])),
                 Type : 'A',

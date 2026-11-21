@@ -164,40 +164,25 @@ if [ ! -f "/opt/tak/certs/files/admin.p12" ]; then
         --secret-binary fileb://files/admin.p12 || true
 fi
 
-ROOT_CA_REVOKE=$(aws secretsmanager get-secret-value --secret-id tak-server-network-cotak-staging/root-ca/revoke 2> /dev/null || "")
-
-# Restore LetsEncrypt cert
-# If no previous LetsEncrypt certs exist, use the self-signed ones
-if [ ! -f "/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks" ]; then
-    if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
-        # Previous LetsEncrypt cert exists, convert it
-        echo "ok - TAK Server - Converting LetsEncrypt certs to TAK format"
-        openssl x509 \
-            -text \
-            -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem" \
-            -noout
-
-        openssl pkcs12 \
-            -export \
-            -in "/etc/letsencrypt/live/${HostedDomain}/fullchain.pem" \
-            -inkey "/etc/letsencrypt/live/${HostedDomain}/privkey.pem" \
-            -out "/opt/tak/certs/files/${HostedDomain}/letsencrypt.p12" \
-            -name "${HostedDomain}" \
-            -password "pass:atakatak"
-
-        keytool \
-            -importkeystore \
-            -srcstorepass "atakatak" \
-            -deststorepass "atakatak" \
-            -destkeystore "/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks" \
-            -srckeystore "/opt/tak/certs/files/${HostedDomain}/letsencrypt.p12" \
-            -srcstoretype "pkcs12"
-    else
-        # No previous LetsEncrypt cert exists, use the self-signed one
-        echo "ok - TAK Server - Using self-signed certs instead of LetsEncrypt certs"
-        cp /opt/tak/certs/files/takserver.jks /opt/tak/certs/files/${HostedDomain}/letsencrypt.jks || true
-    fi
+# Always rebuild the TAK keystore from the current LetsEncrypt cert so renewals are picked up
+# If no LetsEncrypt certs exist, use the self-signed ones
+if [ -d "/etc/letsencrypt/live/${HostedDomain}" ]; then
+    echo "ok - TAK Server - Converting LetsEncrypt certs to TAK format"
+    /opt/tak/letsencrypt-to-jks.sh || echo "not ok - TAK Server - LetsEncrypt cert conversion failed"
 fi
+
+if [ ! -f "/opt/tak/certs/files/${HostedDomain}/letsencrypt.jks" ]; then
+    echo "ok - TAK Server - Using self-signed certs instead of LetsEncrypt certs"
+    cp /opt/tak/certs/files/takserver.jks /opt/tak/certs/files/${HostedDomain}/letsencrypt.jks || true
+fi
+
+# cron does not pass the container environment to the certbot deploy hook
+for name in PATH JAVA_HOME HostedDomain ECS_Cluster_Name ECS_Service_Name $(compgen -e | grep -E '^(AWS_|ECS_CONTAINER_METADATA_URI)'); do
+    if [[ -n "${!name:-}" ]]; then
+        printf 'export %s=%q\n' "${name}" "${!name}"
+    fi
+done > /opt/tak/letsencrypt-env
+chmod 600 /opt/tak/letsencrypt-env
 
 # Request LetsEncrypt certs in background
 /opt/tak/letsencrypt-request-cert.sh &

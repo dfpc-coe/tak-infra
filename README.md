@@ -15,7 +15,7 @@ The following are dependencies which need to be created:
 | Name                  | Notes |
 | --------------------- | ----- |
 | `tak-vpc-<name>`      | VPC & networking to place tasks in - [repo](https://github.com/dfpc-coe/vpc) |
-| `coe-ecr-tak`         | ECR Repository for storing Server Images - [repo](https://github.com/dfpc-coe/ecr)     |
+| `tak-vpc-<name>-takserver` | ECR Repository for storing Server Images - created by the VPC stack |
 
 ### 2. Install Tooling Dependencies
 
@@ -154,9 +154,10 @@ Step 1: Create Network Portion:
 npx deploy create <stack> --template ./cloudformation/network.template.js
 ```
 
-Step 2: Setup a DNS CNAME from your desired hostname for the TAK server to the ELB hostname. The ELB hostname is one of the CloudFormation template outputs.
+The network stack points `<SubdomainPrefix>.<hosted zone>` at the ELB. When the hostname is still served by an
+existing TAK Server, create the stack with `CreateDNSRecord=false` and set it to `true` at cutover.
 
-Step3: Create Service Portion (Once DNS been set & propagated)
+Step 2: Create Service Portion (Once DNS has propagated)
 
 ```
 npx deploy create <stack>

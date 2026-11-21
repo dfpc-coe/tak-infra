@@ -1,13 +1,18 @@
 #!/bin/bash
 
-if [[ -z "$ECS_Cluster_Name" ]]; then  
-  echo "ECS_Cluster_Name not set. Exiting script."  
-  exit 1  
+set -euo pipefail
+
+if [[ -f /opt/tak/letsencrypt-env ]]; then
+    . /opt/tak/letsencrypt-env
 fi
 
-if [[ -z "$ECS_Service_Name" ]]; then  
-  echo "ECS_Service_Name not set. Exiting script."  
-  exit 1  
-fi
+for env in HostedDomain ECS_Cluster_Name ECS_Service_Name; do
+    if [[ -z "${!env:-}" ]]; then
+        echo "not ok - Certbot - ${env} not set. Exiting script."
+        exit 1
+    fi
+done
 
-aws ecs update-service --cluster $ECS_Cluster_Name --service $ECS_Service_Name --force-new-deployment
+/opt/tak/letsencrypt-to-jks.sh
+
+aws ecs update-service --cluster "$ECS_Cluster_Name" --service "$ECS_Service_Name" --force-new-deployment > /dev/null

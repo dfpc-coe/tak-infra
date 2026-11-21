@@ -1,6 +1,13 @@
 import fs from 'node:fs/promises';
 import CP from 'child_process';
 
+/**
+ * Build and push the TAK Server container to AWS ECR
+ *
+ * Environment may be a comma separated list of environments in the same
+ * AWS account - the image is built once and pushed to each of them
+ */
+
 process.env.GITSHA = sha();
 
 process.env.Environment = process.env.Environment || 'prod';
@@ -44,12 +51,16 @@ function login() {
 }
 
 function tak() {
+    const images = process.env.Environment.split(',')
+        .map((environment) => environment.trim())
+        .filter(Boolean)
+        .map((environment) => `$\{AWS_ACCOUNT_ID\}.dkr.ecr.$\{AWS_REGION\}.amazonaws.com/tak-vpc-${environment}-takserver:$\{GITSHA\}`);
+
     return new Promise((resolve, reject) => {
-        const $ = CP.exec(`
-            docker build . -t takserver \
-            && docker tag takserver:latest "$\{AWS_ACCOUNT_ID\}.dkr.ecr.$\{AWS_REGION\}.amazonaws.com/tak-vpc-$\{Environment\}-takserver:$\{GITSHA\}" \
-            && docker push "$\{AWS_ACCOUNT_ID\}.dkr.ecr.$\{AWS_REGION\}.amazonaws.com/tak-vpc-$\{Environment\}-takserver:$\{GITSHA\}"
-        `, (err) => {
+        const $ = CP.exec([
+            'docker build . -t takserver',
+            ...images.map((image) => `docker tag takserver:latest "${image}" && docker push "${image}"`)
+        ].join(' && '), (err) => {
             if (err) return reject(err);
             return resolve();
         });

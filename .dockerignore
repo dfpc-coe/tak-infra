@@ -11,3 +11,12 @@
  .git
  .github
  .gitignore
+ # Local data that must never reach an image
+ tak-data/
+ coverage/
+ test/
+ context
+ migrate.sh
+ finalize.sql
+ *.dump
+ .env*

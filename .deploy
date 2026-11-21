@@ -12,6 +12,7 @@
     ],
     "artifacts": {
         "docker": [
+            "tak-vpc-{{stack}}-takserver:{{gitsha}}"
         ]
     }
 }
