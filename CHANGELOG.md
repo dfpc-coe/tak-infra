@@ -12,11 +12,14 @@
 
 ### Pending Release
 
+### v2.3.1 - 2026-11-24
+
 - :bug: Remove a hardcoded `cotak-staging` secret lookup in `start` which stopped tasks in every other environment
 - :bug: Rebuild the TAK keystore from the renewed Let's Encrypt cert in the deploy hook and on every task start, and give the cron-run hook the container environment, so renewals reach TAK Server
 - :tada: Add `CreateDNSRecord` network-stack parameter to stage a stack ahead of a DNS cutover
 - :rocket: CI now builds through `npm run build` and pushes to the `tak-vpc-<env>-takserver` repositories the service pulls from; `Environment` accepts a comma separated list
 - :bug: Exclude `tak-data/` and other local files from the Docker build context
+- :arrow_up: Update all GH Action Dependencies to latest versions
 
 ### v2.3.0
 
